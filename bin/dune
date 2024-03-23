@@ -2,3 +2,6 @@
  (public_name armulator_lite)
  (name main)
  (libraries arm))
+
+(ocamllex lexer)
+(menhir (modules parser))

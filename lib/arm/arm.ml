@@ -45,9 +45,3 @@ type asm =
 type block = { lbl: lbl; entry: bool; asm: asm }
 
 type prog = block list
-
-module Asm = struct 
-    let data l ds = { lbl = l; entry = true; asm = Data ds }
-    let text l is = { lbl = l; entry = false; asm = Text is }
-    let glob l is = { lbl = l; entry = true; asm = Text is }
-end
