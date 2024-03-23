@@ -1,0 +1,4 @@
+(executable
+ (public_name armulator_lite)
+ (name main)
+ (libraries armulator_lite))
