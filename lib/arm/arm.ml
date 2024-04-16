@@ -13,12 +13,15 @@ type reg =
     | X17 | X18 | X19 | X20 | X21 | X22 | X23 | X24 
     | X25 | X26 | X27 | X28 | SP | LR | XZR
 
+type offset = 
+    | Ind1 of imm (* imm *)
+    | Ind2 of reg (* reg *) 
+    | Ind3 of reg * imm (* [reg, imm] *) 
+
 type operand =
     | Imm of imm
     | Reg of reg 
-    | Ind1 of imm (* addr + imm *)
-    | Ind2 of reg (* addr + reg *)
-    | Ind3 of reg * imm (* addr + [reg, imm] *)
+    | Offset of offset
 
 type cnd = 
     | Eq | Ne | Lt | Le | Gt | Ge 
@@ -42,8 +45,8 @@ type data =
     | Asciz of string
 
 type asm = 
-    | Text of insn list
-    | Data of data list 
+    | IText of insn list
+    | IData of data list 
 
 (* a block is a sequence of instructions, with an optional label (only in the case of .data) and
    if it is an entry block (_start) or not *)
@@ -119,12 +122,12 @@ let string_of_reg = function
 let string_of_operand = function
     | Imm i -> "#" ^ (string_of_imm i)
     | Reg r -> string_of_reg r
-    | Ind1 i -> "[" ^ (string_of_imm i) ^ "]"
-    | Ind2 r -> "[" ^ (string_of_reg r) ^ "]"
-    | Ind3 (r, i) -> "[" ^ (string_of_reg r) ^ ", " ^ (string_of_imm i) ^ "]"
+    | Offset(Ind1 i) -> "[" ^ (string_of_imm i) ^ "]"
+    | Offset(Ind2 r) -> "[" ^ (string_of_reg r) ^ "]"
+    | Offset(Ind3 (r, i)) -> "[" ^ (string_of_reg r) ^ ", " ^ (string_of_imm i) ^ "]"
 
 let string_of_insn (op, ops) =
-    (string_of_opcode op) ^ " " ^ (String.concat ", " (List.map string_of_operand ops))
+    "\t" ^ (string_of_opcode op) ^ " " ^ (String.concat ", " (List.map string_of_operand ops))
 
 let string_of_data = function
     | Quad q -> ".quad " ^ (Int64.to_string q)
@@ -140,8 +143,8 @@ let string_of_block { entry=_; lbl; asm } =
         | None -> ""
         | Some l -> l ^ ":\n" in 
     lbl_str ^ (match asm with
-        | Text insns -> string_of_insn_list insns
-        | Data data -> string_of_data_list data)
+        | IText insns -> string_of_insn_list insns
+        | IData data -> string_of_data_list data)
 
 let rec string_of_prog prog =
     match prog with
