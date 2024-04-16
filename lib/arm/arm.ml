@@ -16,22 +16,25 @@ type reg =
 type operand =
     | Imm of imm
     | Reg of reg 
-    | Ind1 of imm 
-    | Ind2 of reg 
-    | Ind3 of reg * imm
+    | Ind1 of imm (* addr + imm *)
+    | Ind2 of reg (* addr + reg *)
+    | Ind3 of reg * imm (* addr + [reg, imm] *)
 
 type cnd = 
     | Eq | Ne | Lt | Le | Gt | Ge 
 
 type opcode = 
-    | Mov | Adr | Ldr | Str
+    | Mov | Adr
+    | Ldr | Str (* need to add support for ldrb/strb eventually, we can just add new opcodes later *)
     | Add | Sub | Mul 
     | And | Orr | Lsl | Lsr | Asr | Not
     | Br | B of cnd | Cmp | Cbz | Cbnz
     | Bl | Ret 
 
+(* the above should be self explanatory starting from here *)
 type ins = opcode * operand list 
 
+(* datatype directives *)
 type data = 
     | Quad of quad
     | Byte of char 
@@ -42,6 +45,13 @@ type asm =
     | Text of ins list
     | Data of data list 
 
-type block = { lbl: lbl; entry: bool; asm: asm }
+(* a block is a sequence of instructions, with an optional label (only in the case of .data) and
+   if it is an entry block (_start) or not *)
+type block = { entry: bool; lbl: lbl option; asm: asm }
+type directive = 
+    | Extern of string
+    | Text of block list
+    | Data of block list
 
-type prog = block list
+(* a complete program contains a .text and .data section, but we also need to support external symbols *)
+type prog = directive list
