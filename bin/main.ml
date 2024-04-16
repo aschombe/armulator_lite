@@ -1,5 +1,3 @@
-open Printf 
-
 let read_file (file:string) : string list =
   let lines = ref [] in
   let channel = open_in file in
@@ -10,18 +8,8 @@ let read_file (file:string) : string list =
     close_in channel;
     List.rev !lines
 
-let write_file (file:string) (out:string) =
-  let channel = open_out file in
-  fprintf channel "%s" out;
-  close_out channel
-
-let parse_asm_file (filename : string) : unit =
-
-  let stream = read_file filename
-  in
-  () 
-
 let () = 
   let filename = Sys.argv.(1) in
-  let _ = parse_asm_file filename in
+  let lines = read_file filename in
+  let _ = Parser.parse_assembly lines in
   ()

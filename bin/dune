@@ -1,7 +1,5 @@
 (executable
  (public_name armulator_lite)
  (name main)
- (libraries arm util))
-
-(ocamllex lexer)
-(menhir (modules parser))
+ (modules main parser)
+ (libraries arm))
