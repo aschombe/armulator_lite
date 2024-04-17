@@ -67,27 +67,28 @@ let string_of_top_level_directive = function
     | Extern _ -> ".extern"
     | Text _ -> ".text"
     | Data _ -> ".data"
+let ast_string_of_top_level_directive = function 
+    | Globl _ -> "Arm.Globl"
+    | Extern _ -> "Arm.Extern"
+    | Text _ -> "Arm.Text"
+    | Data _ -> "Arm.Data"
 
 let string_of_data_directive = function
     | Quad _ -> ".quad"
     | Byte _ -> ".byte"
     | String _ -> ".string"
     | Asciz _ -> ".asciz"
+let ast_string_of_data_directive = function
+    | Quad _ -> "Arm.Quad"
+    | Byte _ -> "Arm.Byte"
+    | String _ -> "Arm.String"
+    | Asciz _ -> "Arm.Asciz"
 
 let string_of_opcode = function
-    | Mov -> "mov"
-    | Adr -> "adr"
-    | Ldr -> "ldr"
-    | Str -> "str"
-    | Add -> "add"
-    | Sub -> "sub"
-    | Mul -> "mul"
-    | And -> "and"
-    | Orr -> "orr"
-    | Lsl -> "lsl"
-    | Lsr -> "lsr"
-    | Asr -> "asr"
-    | Not -> "not"
+    | Mov -> "mov" | Adr -> "adr"
+    | Ldr -> "ldr" | Str -> "str"
+    | Add -> "add" | Sub -> "sub" | Mul -> "mul"
+    | And -> "and" | Orr -> "orr" | Lsl -> "lsl" | Lsr -> "lsr" | Asr -> "asr" | Not -> "not"
     | Br -> "br"
     | B c -> "b." ^ (match c with
         | Eq -> "eq"
@@ -96,15 +97,24 @@ let string_of_opcode = function
         | Le -> "le"
         | Gt -> "gt"
         | Ge -> "ge")
-    | Cmp -> "cmp"
-    | Cbz -> "cbz"
-    | Cbnz -> "cbnz"
-    | Bl -> "bl"
-    | Ret -> "ret"
+    | Cmp -> "cmp" | Cbz -> "cbz" | Cbnz -> "cbnz" | Bl -> "bl" | Ret -> "ret"
+let ast_string_of_opcode = function 
+    | Mov -> "Arm.Mov" | Adr -> "Arm.Adr"
+    | Ldr -> "Arm.Ldr" | Str -> "Arm.Str"
+    | Add -> "Arm.Add" | Sub -> "Arm.Sub" | Mul -> "Arm.Mul"
+    | And -> "Arm.And" | Orr -> "Arm.Orr" | Lsl -> "Arm.Lsl" | Lsr -> "Arm.Lsr" | Asr -> "Arm.Asr" | Not -> "Arm.Not"
+    | Br -> "Arm.Br"
+    | B c -> "Arm.B(" ^ (
+        match c with
+        | Eq -> "Arm.Eq" | Ne -> "Arm.Ne" | Lt -> "Arm.Lt" | Le -> "Arm.Le" | Gt -> "Arm.Gt" | Ge -> "Arm.Ge") ^ ")"
+    | Cmp -> "Arm.Cmp" | Cbz -> "Arm.Cbz" | Cbnz -> "Arm.Cbnz" | Bl -> "Arm.Bl" | Ret -> "Arm.Ret"
 
 let string_of_imm = function
     | Lit i -> "#" ^ Int64.to_string i
     | Lbl l -> l 
+let ast_string_of_imm = function
+    | Lit i -> "Arm.Lit(" ^ Int64.to_string i ^ "L)"
+    | Lbl l -> "Arm.Lbl(" ^ l ^ ")"
 
 let string_of_reg = function
     | X0 -> "x0" | X1 -> "x1" | X2 -> "x2" | X3 -> "x3"
@@ -118,6 +128,9 @@ let string_of_reg = function
     | X25 -> "x25" | X26 -> "x26" | X27 -> "x27"
     | X28 -> "x28"
     | SP -> "sp" | LR -> "lr" | XZR -> "xzr"
+let ast_string_of_reg (r : reg) : string =
+    let uppercase_reg = String.uppercase_ascii (string_of_reg r) in 
+    "Arm." ^ uppercase_reg
 
 let string_of_operand = function
     | Imm i -> string_of_imm i
@@ -125,18 +138,33 @@ let string_of_operand = function
     | Offset(Ind1 i) -> "[" ^ (string_of_imm i) ^ "]"
     | Offset(Ind2 r) -> "[" ^ (string_of_reg r) ^ "]"
     | Offset(Ind3 (r, i)) -> "[" ^ (string_of_reg r) ^ ", " ^ (string_of_imm i) ^ "]"
+let ast_string_of_operand = function
+    | Imm i -> "Arm.Imm(" ^ (ast_string_of_imm i) ^ ")"
+    | Reg r -> "Arm.Reg(" ^ (ast_string_of_reg r) ^ ")"
+    | Offset(Ind1 i) -> "Arm.Offset(Arm.Ind1(" ^ (ast_string_of_imm i) ^ "))"
+    | Offset(Ind2 r) -> "Arm.Offset(Arm.Ind2(" ^ (ast_string_of_reg r) ^ "))"
+    | Offset(Ind3 (r, i)) -> "Arm.Offset(Arm.Ind3(" ^ (ast_string_of_reg r) ^ ", " ^ (ast_string_of_imm i) ^ "))"
 
 let string_of_insn (op, ops) =
     "\t" ^ (string_of_opcode op) ^ " " ^ (String.concat ", " (List.map string_of_operand ops))
+let ast_string_of_insn (op, ops) =
+    "\tArm.Insn(" ^ (ast_string_of_opcode op) ^ ", [" ^ (String.concat "; " (List.map ast_string_of_operand ops)) ^ "])"
 
 let string_of_data = function
     | Quad q -> ".quad " ^ (Int64.to_string q)
     | Byte c -> ".byte " ^ (Char.escaped c)
     | String s -> ".string " ^ s
     | Asciz s -> ".asciz " ^ s 
+let ast_string_of_data = function
+    | Quad q -> "Arm.Quad(" ^ (Int64.to_string q) ^ "L)"
+    | Byte c -> "Arm.Byte('" ^ (Char.escaped c) ^ "')"
+    | String s -> "Arm.String(\"" ^ s ^ "\")"
+    | Asciz s -> "Arm.Asciz(\"" ^ s ^ "\")"
 
 let string_of_insn_list insns = String.concat "\n" (List.map string_of_insn insns)
+let ast_string_of_insn_list insns = String.concat "\n" (List.map ast_string_of_insn insns)
 let string_of_data_list data = String.concat "\n" (List.map string_of_data data)
+let ast_string_of_data_list data = String.concat "\n" (List.map ast_string_of_data data)
 
 let string_of_block { entry=_; lbl; asm } =
     let lbl_str = match lbl with
@@ -145,6 +173,12 @@ let string_of_block { entry=_; lbl; asm } =
     lbl_str ^ (match asm with
         | IText insns -> string_of_insn_list insns
         | IData data -> string_of_data_list data)
+let ast_string_of_block { entry=entry; lbl; asm } =
+    "{ entry=" ^ string_of_bool entry ^ "; lbl=" ^ (match lbl with
+        | None -> "None"
+        | Some l -> "Some(\"" ^ l ^ "\")") ^ "; asm=" ^ (match asm with
+        | IText insns -> "Arm.IText([\n" ^ (ast_string_of_insn_list insns) ^ "\n])"
+        | IData data -> "Arm.IData([\n" ^ (ast_string_of_data_list data) ^ "\n])") ^ "}"
 
 let rec string_of_prog prog =
     match prog with
@@ -153,3 +187,10 @@ let rec string_of_prog prog =
     | Extern s :: tl -> ".extern " ^ s ^ "\n" ^ (string_of_prog tl) 
     | Text blocks :: tl -> ".text\n" ^ (String.concat "\n" (List.map string_of_block blocks)) ^ "\n" ^ (string_of_prog tl) 
     | Data blocks :: tl -> ".data\n" ^ (String.concat "\n" (List.map string_of_block blocks)) ^ "\n" ^ (string_of_prog tl) 
+let rec ast_string_of_prog prog =
+    match prog with
+    | [] -> ""
+    | Globl s :: tl -> "Arm.Globl(\"" ^ s ^ "\")\n" ^ (ast_string_of_prog tl) 
+    | Extern s :: tl -> "Arm.Extern(\"" ^ s ^ "\")\n" ^ (ast_string_of_prog tl) 
+    | Text blocks :: tl -> "Arm.Text([\n" ^ (String.concat ";\n" (List.map ast_string_of_block blocks)) ^ "\n])" ^ (ast_string_of_prog tl) 
+    | Data blocks :: tl -> "Arm.Data([\n" ^ (String.concat ";\n" (List.map ast_string_of_block blocks)) ^ "\n])" ^ (ast_string_of_prog tl)

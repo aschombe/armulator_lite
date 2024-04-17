@@ -1,8 +1,10 @@
-let read_file (file:string) : string list =
+let read_file (file:string) : (int * string) list =
   let lines = ref [] in
+  let ln = ref 1 in
   let channel = open_in file in
   try while true; do
-      lines := input_line channel :: !lines
+    lines := (!ln, input_line channel) :: !lines;
+    ln := !ln + 1
   done; []
   with End_of_file ->
     close_in channel;

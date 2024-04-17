@@ -1,3 +1,9 @@
+exception Syntax_error of string 
+
+let arm_error (ln : int) (line : string) (msg : string) : 'a =
+  let msg = Printf.sprintf "\nSyntax error on line %d: %s\n\n\t%s\n\n" ln msg line in
+  raise (Syntax_error msg)
+
 let print_lines (lines : string list) : unit =
   List.iter (fun x -> print_endline x) lines
 
@@ -17,70 +23,71 @@ let is_number (n : string) : bool =  (* starts with #, or starts with a digit, 0
   let starts_with_0o = String.starts_with tn ~prefix:"0o" in 
   starts_with_pound || starts_with_digit || starts_with_0x || starts_with_0b || starts_with_0o
 
-let find_directives (lines : string list) (d_name : string) : string list list = 
-  let rec fdh (l: string list) (d: string) (active: bool) (acc : string list list) (cur : string list) : string list list =
+let find_directives (lines : (int * string) list) (d_name : string) : (int * string) list list = 
+  let rec fdh (l: (int * string) list) (d: string) (active: bool) (acc : (int * string) list list) (cur : (int * string) list) : (int * string) list list =
     match l with
     | [] -> acc @ [cur]
-    | h::t -> 
+    | (i, h)::t -> 
       if is_directive h then
         if active then 
           fdh t d true (acc @ [cur]) []
         else if String.starts_with h ~prefix:("." ^ d) then
-          fdh t d true acc [h]
+          fdh t d true acc [(i, h)]
         else
           fdh t d false acc cur
       else if active then
-        fdh t d true acc (cur @ [h])
+        fdh t d true acc (cur @ [(i, h)])
       else
         fdh t d false acc cur
   in 
   fdh lines d_name false [] []
 
-let find_defs (lines : string list) (d_name : string) : string list = 
-  let rec fdh (l: string list) (d: string) (acc : string list) : string list =
+let find_defs (lines : (int * string) list) (d_name : string) : (int * string) list = 
+  let rec fdh (l: (int * string) list) (d: string) (acc : (int * string) list) : (int * string) list =
     match l with
     | [] -> acc
-    | h::t -> 
+    | (i, h)::t -> 
       if is_directive h then
         if String.starts_with h ~prefix:("." ^ d) then
           let defname = List.nth (String.split_on_char ' ' h) 1 in
-          fdh t d acc @ [defname]
+          fdh t d acc @ [(i, defname)]
         else
           fdh t d acc
       else
         fdh t d acc
   in fdh lines d_name []
 
-let find_blocks (lines : string list) : string list list = 
-  let rec fbh (l: string list) (active: bool) (acc : string list list) (cur : string list) : string list list =
+let find_blocks (lines : (int * string) list) : (int * string) list list = 
+  let rec fbh (l: (int * string) list) (active: bool) (acc : (int * string) list list) (cur : (int * string) list) : (int * string) list list =
     match l with
     | [] -> acc @ [cur]
-    | h::t -> 
+    | (i, h)::t -> 
       if has_label h then
         if active then
-          fbh t true (acc @ [cur]) [h]
+          fbh t true (acc @ [cur]) [(i, h)]
         else
-          fbh t true acc [h]
+          fbh t true acc [(i, h)]
       else if active then
-        fbh t true acc (cur @ [h])
+        fbh t true acc (cur @ [(i, h)])
       else
         fbh t false acc cur
   in 
   fbh lines false [] []
 
-let parse_label (line : string) : (string * string) = 
+let parse_label ((ln, line): (int * string)) : (string * (int * string)) = 
   let line = String.trim line in
   let idx = String.index_opt line ':' in
   let lbl = match idx with
   | Some i -> String.sub line 0 i 
-  | None -> "" in 
+  | None -> arm_error ln line "Could not parse label!" in 
   let rest = match idx with
   | Some i -> String.sub line (i + 1) ((String.length line) - i - 1) 
-  | None -> "" in
-  (lbl, rest)
+  | None -> arm_error ln line "Could not parse label!" in
+  (lbl, (ln, rest))
 
-let opcode_of_string (mnemonic : string) : Arm.opcode = 
-  match mnemonic with
+let opcode_of_string ((ln, insn) : (int * string)) (mnemonic : string) : Arm.opcode = 
+  let partial = String.split_on_char '.' mnemonic |> List.hd in
+  match partial with
   | "mov" -> Arm.Mov | "adr" -> Arm.Adr 
   | "ldr" -> Arm.Ldr | "str" -> Arm.Str 
   | "add" -> Arm.Add| "sub" -> Arm.Sub  | "mul" -> Arm.Mul 
@@ -94,14 +101,14 @@ let opcode_of_string (mnemonic : string) : Arm.opcode =
       | "le" -> Arm.Le
       | "gt" -> Arm.Gt 
       | "ge" -> Arm.Ge
-      | _ -> raise (Invalid_argument "Invalid condition code")
+      | _ -> arm_error ln insn ("Invalid condition code '" ^ cnd_code_mnemonic ^ "'")
       ) 
       in Arm.B cnd_code
   | "cmp" -> Arm.Cmp | "cbz" -> Arm.Cbz  | "cbnz" -> Arm.Cbnz 
   | "bl" -> Arm.Bl  | "ret" -> Arm.Ret 
-  | _ -> raise (Invalid_argument "Invalid mnemonic")
+  | _ -> arm_error ln insn ("Invalid mnemonic '" ^ mnemonic ^ "'")
 
-let register_of_string (reg : string) : Arm.reg = 
+let register_of_string ((ln, insn) : (int * string)) (reg : string) : Arm.reg = 
   match reg with
   | "x0" -> Arm.X0 | "x1" -> Arm.X1 | "x2" -> Arm.X2 | "x3" -> Arm.X3
   | "x4" -> Arm.X4 | "x5" -> Arm.X5 | "x6" -> Arm.X6 | "x7" -> Arm.X7 
@@ -113,11 +120,11 @@ let register_of_string (reg : string) : Arm.reg =
   | "x26" -> Arm.X26 | "x27" -> Arm.X27 | "x28" -> Arm.X28 | "x29" -> Arm.SP 
   | "x30" -> Arm.LR | "x31" -> Arm.XZR 
   | "sp" -> Arm.SP | "lr" -> Arm.LR | "xzr" -> Arm.XZR
-  | _ -> raise (Invalid_argument ("Invalid register" ^ reg))
+  | _ -> arm_error ln insn ("Invalid register '" ^ reg ^ "'")
 let is_not_register (r : string) : bool = 
   try 
-    let _ = register_of_string r in false 
-  with Invalid_argument _ -> true
+    let _ = register_of_string (0, "") r in false 
+  with _ -> true
 
 let imm_of_string (imm : string) : Arm.imm = 
   if is_number imm then 
@@ -125,73 +132,73 @@ let imm_of_string (imm : string) : Arm.imm =
   else 
     Arm.Lbl imm
 
-let offset_of_string (offset : string list) : Arm.offset = 
+let offset_of_string ((ln, insn) : (int * string)) (offset : string list) : Arm.offset = 
   if List.length offset = 1 then
     (* handle imm and reg single case *)
     let imm = List.nth offset 0 in
     if is_number imm then 
       Arm.Ind1(Arm.Lit(Int64.of_string imm))
     else 
-      Arm.Ind2(register_of_string imm)
+      Arm.Ind2(register_of_string (ln, insn) imm)
   else 
     let reg = List.nth (String.split_on_char '[' (List.nth offset 0)) 1 in
     let imm = List.nth (String.split_on_char ']' (List.nth offset 1)) 0 in
-    Arm.Ind3(register_of_string reg, Arm.Lit(Int64.of_string imm))
+    Arm.Ind3(register_of_string (ln, insn) reg, Arm.Lit(Int64.of_string imm))
 
-let operand_of_string (operand : string) : Arm.operand = 
+let operand_of_string ((ln, insn) : (int * string)) (operand : string) : Arm.operand = 
   if is_number operand || is_not_register operand then 
     Arm.Imm (imm_of_string operand)
   else 
-    Arm.Reg (register_of_string operand)
+    Arm.Reg (register_of_string (ln, insn) operand)
 
-let operands_of_tokens (args : string list) : Arm.operand list = 
+let operands_of_tokens ((ln, insn) : (int * string)) (args : string list) : Arm.operand list = 
   match args with
   | [] -> []
-  | a1::[] -> [operand_of_string a1]
-  | a1::a2::[] -> [operand_of_string a1; operand_of_string a2]
+  | a1::[] -> [operand_of_string (ln, insn) a1]
+  | a1::a2::[] -> [operand_of_string (ln, insn) a1; operand_of_string (ln, insn) a2]
   | a1::a2::a3::[] -> 
       if String.contains a2 '[' && String.contains a2 ']' then
-        [operand_of_string a1; Arm.Offset(offset_of_string [a2; a3])]
+        [operand_of_string (ln, insn) a1; Arm.Offset(offset_of_string (ln, insn) [a2; a3])]
       else
-        [operand_of_string a1; operand_of_string a2; operand_of_string a3]
+        [operand_of_string (ln, insn) a1; operand_of_string (ln, insn) a2; operand_of_string (ln, insn) a3]
   | _ -> raise (Invalid_argument "Invalid number of operands")
 
-let tokenize_insn (line : string) : string list = 
+let tokenize_insn ((ln, line) : (int * string)) : ((int * string) * string list) = 
   if is_empty line then
-    []
+    ((ln, line), [])
   else
     let line = String.trim line in
     let parts = String.split_on_char ' ' line in
     let no_commas = List.map (fun x -> String.split_on_char ',' x) parts |> List.flatten in
     let no_empty_strs = List.filter (fun x -> not (String.equal x "")) no_commas in 
-    no_empty_strs
+    ((ln, line), no_empty_strs)
 
-let parse_insn (tokens : string list) : Arm.insn =
+let parse_insn ((ln, insn) : (int * string)) (tokens : string list) : Arm.insn =
   if List.length tokens = 0 then
-    raise (Invalid_argument "Empty instruction")
+    arm_error ln "" "Empty instruction!"
   else
     let mnemonic = List.nth tokens 0 in
-    let opcode = opcode_of_string mnemonic in
-    let operands = operands_of_tokens (List.tl tokens) in
+    let opcode = opcode_of_string (ln, insn) mnemonic in
+    let operands = operands_of_tokens (ln, insn) (List.tl tokens) in
     (opcode, operands)
 
-let parse_text_block (lines : string list) : Arm.block = 
+let parse_text_block (lines : (int * string) list) : Arm.block = 
   let (label, rest) = parse_label (List.hd lines) in
   let removed_lines = rest :: (List.tl lines) in
   let lbl_opt = if String.equal label "" then None else Some(label) in
-  let tokenized_lines = List.map (fun x -> tokenize_insn x) removed_lines in
-  let no_empty_lines = List.filter (fun x -> not (List.length x = 0)) tokenized_lines in
-  let insns = List.map (fun x -> parse_insn x) no_empty_lines in
+  let tokenized_lines = List.map (fun insn_line -> tokenize_insn insn_line) removed_lines in
+  let no_empty_lines = List.filter (fun (_, tokens) -> not (List.length tokens = 0)) tokenized_lines in
+  let insns = List.map (fun ((ln, insn), tokens) -> parse_insn (ln, insn) tokens) no_empty_lines in
   let is_entry = String.equal label "_start" in
   {entry=is_entry; lbl=lbl_opt; asm=Arm.IText(insns)}
 
-let transform_global_defs (defs : string list) : Arm.tld list = 
-  List.map (fun x -> Arm.Globl(x)) defs
+let transform_global_defs (defs : (int * string) list) : Arm.tld list = 
+  List.map (fun (_, x) -> Arm.Globl(x)) defs
 
-let transform_extern_defs (defs : string list) : Arm.tld list =
-  List.map (fun x -> Arm.Extern(x)) defs
+let transform_extern_defs (defs : (int * string) list) : Arm.tld list =
+  List.map (fun (_, x) -> Arm.Extern(x)) defs
 
-let parse_assembly (lines : string list) : Arm.prog =
+let parse_assembly (lines : (int * string) list) : Arm.prog =
   let global_defs =
     (find_defs lines "global" |> transform_global_defs) @
     (find_defs lines "globl" |> transform_global_defs)
