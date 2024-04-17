@@ -103,7 +103,7 @@ let string_of_opcode = function
     | Ret -> "ret"
 
 let string_of_imm = function
-    | Lit i -> Int64.to_string i
+    | Lit i -> "#" ^ Int64.to_string i
     | Lbl l -> l 
 
 let string_of_reg = function
@@ -120,7 +120,7 @@ let string_of_reg = function
     | SP -> "sp" | LR -> "lr" | XZR -> "xzr"
 
 let string_of_operand = function
-    | Imm i -> "#" ^ (string_of_imm i)
+    | Imm i -> string_of_imm i
     | Reg r -> string_of_reg r
     | Offset(Ind1 i) -> "[" ^ (string_of_imm i) ^ "]"
     | Offset(Ind2 r) -> "[" ^ (string_of_reg r) ^ "]"

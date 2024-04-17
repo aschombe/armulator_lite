@@ -1,6 +1,13 @@
-.global _main
+.global _start
 
 .text
-main:
-    mov x0, 0b1111 
+proc1:
+    mov x1, 1
+    mov x2, 2
+    add x0, x1, x2 
+    ret
+
+.text
+_start:
+    bl proc1
     ret 

@@ -23,10 +23,10 @@ let find_directives (lines : string list) (d_name : string) : string list list =
     | [] -> acc @ [cur]
     | h::t -> 
       if is_directive h then
-        if String.starts_with h ~prefix:("." ^ d) then
-          fdh t d true acc []
-        else if active then
-          fdh t d false (acc @ [cur]) []
+        if active then 
+          fdh t d true (acc @ [cur]) []
+        else if String.starts_with h ~prefix:("." ^ d) then
+          fdh t d true acc [h]
         else
           fdh t d false acc cur
       else if active then
@@ -113,7 +113,11 @@ let register_of_string (reg : string) : Arm.reg =
   | "x26" -> Arm.X26 | "x27" -> Arm.X27 | "x28" -> Arm.X28 | "x29" -> Arm.SP 
   | "x30" -> Arm.LR | "x31" -> Arm.XZR 
   | "sp" -> Arm.SP | "lr" -> Arm.LR | "xzr" -> Arm.XZR
-  | _ -> raise (Invalid_argument "Invalid register")
+  | _ -> raise (Invalid_argument ("Invalid register" ^ reg))
+let is_not_register (r : string) : bool = 
+  try 
+    let _ = register_of_string r in false 
+  with Invalid_argument _ -> true
 
 let imm_of_string (imm : string) : Arm.imm = 
   if is_number imm then 
@@ -135,7 +139,7 @@ let offset_of_string (offset : string list) : Arm.offset =
     Arm.Ind3(register_of_string reg, Arm.Lit(Int64.of_string imm))
 
 let operand_of_string (operand : string) : Arm.operand = 
-  if is_number operand then 
+  if is_number operand || is_not_register operand then 
     Arm.Imm (imm_of_string operand)
   else 
     Arm.Reg (register_of_string operand)
@@ -193,8 +197,9 @@ let parse_assembly (lines : string list) : Arm.prog =
     (find_defs lines "globl" |> transform_global_defs)
   in
   let extern_defs = find_defs lines "extern" |> transform_extern_defs in
-  let text_directives = find_directives lines "text" in
-  let blocks = find_blocks (List.nth text_directives 0) in
-  let text_blocks = List.map (fun x -> parse_text_block x) blocks in 
-  extern_defs @ global_defs @ [Arm.Text(text_blocks)]
+  let text_directives = List.concat (find_directives lines "text") in
+  let text_blocks = find_blocks text_directives in 
+  let text_blocks_parsed = Arm.Text(List.map (fun x -> parse_text_block x) text_blocks) in 
+  extern_defs @ global_defs @ [text_blocks_parsed]
+
 
