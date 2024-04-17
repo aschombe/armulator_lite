@@ -12,9 +12,9 @@ _always:
     ret
 _never:
     mov x0, 1
+    ldr x0, [x0, 0]
     ret
 
-.text
 _start:
     bl proc1
     ret 
