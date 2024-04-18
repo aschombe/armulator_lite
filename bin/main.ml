@@ -1,4 +1,4 @@
-let read_file (file:string) : (int * string) list =
+let read_file (file:string) : Parser.code_line list =
   let lines = ref [] in
   let ln = ref 1 in
   let channel = open_in file in
@@ -10,9 +10,20 @@ let read_file (file:string) : (int * string) list =
     close_in channel;
     List.rev !lines
 
-let () = 
-  let filename = Sys.argv.(1) in
-  let lines = read_file filename in
+let _debug lines = 
+  let text_directives = Parser.find_directives lines "text" in 
+  let data_directives = Parser.find_directives lines "data" in 
+  print_endline "Text Directives:";
+  List.iter (fun codelines -> Parser.print_code_lines codelines) text_directives;
+  print_endline "Data Directives:";
+  List.iter (fun codelines -> Parser.print_code_lines codelines) data_directives
+
+let main lines =
   let parsed_insns = Parser.parse_assembly lines in
   let stringified = Arm.ast_string_of_prog parsed_insns in 
   print_endline stringified
+
+let () = 
+  let filename = Sys.argv.(1) in
+  let lines = read_file filename in
+  main lines

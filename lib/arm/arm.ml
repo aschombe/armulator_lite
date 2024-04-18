@@ -40,38 +40,40 @@ type insn = opcode * operand list
 (* datatype directives *)
 type data = 
     | Quad of quad
+    | QuadArr of quad list
     | Byte of char 
+    | ByteArr of char list
     | String of string
     | Asciz of string
 
 type asm = 
-    | IText of insn list
-    | IData of data list 
+    | Text of insn list
+    | Data of data list 
 
 (* a block is a sequence of instructions, with an optional label (only in the case of .data) and
    if it is an entry block (_start) or not *)
-type block = { entry: bool; lbl: lbl option; asm: asm }
+type block = { entry: bool; lbl: lbl; asm: asm }
 
 (* top level directives *)
 type tld = 
-    | Globl of string
-    | Extern of string
-    | Text of block list
-    | Data of block list
+    | GloblDef of string
+    | ExternSym of string
+    | TextBlock of block list
+    | DataBlock of block list
 
 (* a complete program contains a .gloabl, .text, and .data section, but we also need to support external symbols *)
 type prog = tld list
 
 let string_of_top_level_directive = function
-    | Globl _ -> ".globl"
-    | Extern _ -> ".extern"
-    | Text _ -> ".text"
-    | Data _ -> ".data"
+    | GloblDef _ -> ".globl"
+    | ExternSym _ -> ".extern"
+    | TextBlock _ -> ".text"
+    | DataBlock _ -> ".data"
 let ast_string_of_top_level_directive = function 
-    | Globl _ -> "Arm.Globl"
-    | Extern _ -> "Arm.Extern"
-    | Text _ -> "Arm.Text"
-    | Data _ -> "Arm.Data"
+    | GloblDef _ -> "Arm.Globl"
+    | ExternSym _ -> "Arm.Extern"
+    | TextBlock _ -> "Arm.Text"
+    | DataBlock _ -> "Arm.Data"
 
 let string_of_data_directive = function
     | Quad _ -> ".quad"
@@ -167,30 +169,26 @@ let string_of_data_list data = String.concat "\n" (List.map string_of_data data)
 let ast_string_of_data_list data = String.concat "\n" (List.map ast_string_of_data data)
 
 let string_of_block { entry=_; lbl; asm } =
-    let lbl_str = match lbl with
-        | None -> ""
-        | Some l -> l ^ ":\n" in 
-    lbl_str ^ (match asm with
-        | IText insns -> string_of_insn_list insns
-        | IData data -> string_of_data_list data)
+    lbl ^ (match asm with
+        | Text insns -> string_of_insn_list insns
+        | Data data -> string_of_data_list data)
+
 let ast_string_of_block { entry=entry; lbl; asm } =
-    "{ entry=" ^ string_of_bool entry ^ "; lbl=" ^ (match lbl with
-        | None -> "None"
-        | Some l -> "Some(\"" ^ l ^ "\")") ^ "; asm=" ^ (match asm with
-        | IText insns -> "Arm.IText([\n" ^ (ast_string_of_insn_list insns) ^ "\n])"
-        | IData data -> "Arm.IData([\n" ^ (ast_string_of_data_list data) ^ "\n])") ^ "}"
+    "{ entry=" ^ string_of_bool entry ^ "; lbl=Arm.Lbl(\"" ^ lbl ^ "\"); asm=" ^ (match asm with
+        | Text insns -> "Arm.Text([\n" ^ (ast_string_of_insn_list insns) ^ "\n])"
+        | Data data -> "Arm.Data([\n" ^ (ast_string_of_data_list data) ^ "\n])") ^ "}"
 
 let rec string_of_prog prog =
     match prog with
     | [] -> ""
-    | Globl s :: tl -> ".globl " ^ s ^ "\n" ^ (string_of_prog tl) 
-    | Extern s :: tl -> ".extern " ^ s ^ "\n" ^ (string_of_prog tl) 
-    | Text blocks :: tl -> ".text\n" ^ (String.concat "\n" (List.map string_of_block blocks)) ^ "\n" ^ (string_of_prog tl) 
-    | Data blocks :: tl -> ".data\n" ^ (String.concat "\n" (List.map string_of_block blocks)) ^ "\n" ^ (string_of_prog tl) 
+    | GloblDef s :: tl -> ".globl " ^ s ^ "\n" ^ (string_of_prog tl) 
+    | ExternSym s :: tl -> ".extern " ^ s ^ "\n" ^ (string_of_prog tl) 
+    | TextBlock blocks :: tl -> ".text\n" ^ (String.concat "\n" (List.map string_of_block blocks)) ^ "\n" ^ (string_of_prog tl) 
+    | DataBlock blocks :: tl -> ".data\n" ^ (String.concat "\n" (List.map string_of_block blocks)) ^ "\n" ^ (string_of_prog tl) 
 let rec ast_string_of_prog prog =
     match prog with
     | [] -> ""
-    | Globl s :: tl -> "Arm.Globl(\"" ^ s ^ "\")\n" ^ (ast_string_of_prog tl) 
-    | Extern s :: tl -> "Arm.Extern(\"" ^ s ^ "\")\n" ^ (ast_string_of_prog tl) 
-    | Text blocks :: tl -> "Arm.Text([\n" ^ (String.concat ";\n" (List.map ast_string_of_block blocks)) ^ "\n])" ^ (ast_string_of_prog tl) 
-    | Data blocks :: tl -> "Arm.Data([\n" ^ (String.concat ";\n" (List.map ast_string_of_block blocks)) ^ "\n])" ^ (ast_string_of_prog tl)
+    | GloblDef s :: tl -> "Arm.GloblDef(\"" ^ s ^ "\")\n" ^ (ast_string_of_prog tl) 
+    | ExternSym s :: tl -> "Arm.ExternSym(\"" ^ s ^ "\")\n" ^ (ast_string_of_prog tl) 
+    | TextBlock blocks :: tl -> "Arm.TextBlock([\n" ^ (String.concat ";\n" (List.map ast_string_of_block blocks)) ^ "\n])" ^ (ast_string_of_prog tl) 
+    | DataBlock blocks :: tl -> "Arm.DataBlock([\n" ^ (String.concat ";\n" (List.map ast_string_of_block blocks)) ^ "\n])" ^ (ast_string_of_prog tl)

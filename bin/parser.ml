@@ -1,3 +1,5 @@
+open Str
+
 exception Syntax_error
 exception Ok
 
@@ -13,13 +15,22 @@ let arm_error (ln : int) (line : string) (highlight : string) (msg : string) : '
     let () = Printf.fprintf Out_channel.stderr "\t%s\n\n" highlighted_line in
     raise (Syntax_error)
 
-let print_lines (lines : string list) : unit =
-  List.iter (fun x -> print_endline x) lines
+let print_code_lines (lines : code_line list) : unit =
+  List.iter (fun (_, line) -> print_endline line) lines
 
 (* generic parse helpers *)
 let is_empty (line : string) : bool = 
   let line = String.trim line in
   String.equal String.empty line
+let tokenize ((ln, line) : code_line) : (code_line * string list) = 
+  if is_empty line then
+    ((ln, line), [])
+  else
+    let line = String.trim line in
+    let parts = String.split_on_char ' ' line in
+    let no_commas = List.map (fun x -> String.split_on_char ',' x) parts |> List.flatten in
+    let no_empty_strs = List.filter (fun x -> not (String.equal x "")) no_commas in 
+    ((ln, line), no_empty_strs)
 let is_tld (line : string) : bool = String.starts_with line ~prefix:"."
 let is_lbl_def (line : string) : bool = String.contains line ':'
 let is_digit (c : char) : bool = Char.code c >= Char.code '0' && Char.code c <= Char.code '9'
@@ -42,16 +53,24 @@ let parse_label ((ln, line): code_line) : (string * code_line) =
   | None -> arm_error ln line "" "Could not parse label!" in
   (lbl, (ln, rest))
 
+let parse_string ((ln, line): code_line) : (string * code_line) = 
+  let regex = Str.regexp {|\(["']\)(?:(?=(\\?))\2.)*?\1|} in
+  let () = if not (Str.string_match regex line 0) then arm_error ln line line "Invalid string" in 
+  let str = Str.matched_string line in 
+  let rest = Str.string_after str 1 in 
+  let rest = Str.string_before rest ((String.length rest) - 1) in 
+  (rest, (ln, rest)) 
+
+(* directive parsing *)
+
 let find_directives (lines : code_line list) (d_name : string) : code_line list list = 
   let rec fdh (l: code_line list) (d: string) (active: bool) (acc : code_line list list) (cur : code_line list) : code_line list list =
     match l with
     | [] -> acc @ [cur]
     | (i, h)::t -> 
       if is_tld h then
-        if active then 
+        if String.starts_with h ~prefix:("." ^ d) then
           fdh t d true (acc @ [cur]) []
-        else if String.starts_with h ~prefix:("." ^ d) then
-          fdh t d true acc [(i, h)]
         else
           fdh t d false acc cur
       else if active then
@@ -95,15 +114,17 @@ let find_defs (lines : code_line list) (d_name : string) : code_line list =
   in fdh lines d_name []
 
 let transform_global_defs (defs : code_line list) : Arm.tld list = 
-  List.map (fun (_, x) -> Arm.Globl(x)) defs
+  List.map (fun (_, x) -> Arm.GloblDef(x)) defs
 
 let transform_extern_defs (defs : code_line list) : Arm.tld list =
-  List.map (fun (_, x) -> Arm.Extern(x)) defs
+  List.map (fun (_, x) -> Arm.ExternSym(x)) defs
 
 
 (* instruction parsing *)
 let opcode_of_string ((ln, insn) : code_line) (mnemonic : string) : Arm.opcode = 
-  let partial = String.split_on_char '.' mnemonic |> List.hd in
+  let pieces = String.split_on_char '.' mnemonic in
+  let partial = List.nth pieces 0 in 
+  let cnd_code_mnemoic = (if List.length pieces > 1 then List.nth pieces 1 else "") in
   match partial with
   | "mov" -> Arm.Mov | "adr" -> Arm.Adr 
   | "ldr" -> Arm.Ldr | "str" -> Arm.Str 
@@ -119,8 +140,8 @@ let opcode_of_string ((ln, insn) : code_line) (mnemonic : string) : Arm.opcode =
       | "le" -> Arm.Le
       | "gt" -> Arm.Gt 
       | "ge" -> Arm.Ge
-      | _ -> arm_error ln insn cnd_code_mnemonic "Invalid condition code") in Arm.B cnd_code
-    with _ -> arm_error ln insn mnemonic "Invalid mnemonic")
+      | _ -> raise Syntax_error) in Arm.B cnd_code
+    with _ -> arm_error ln insn cnd_code_mnemoic "Invalid condition code")
   | "cmp" -> Arm.Cmp | "cbz" -> Arm.Cbz  | "cbnz" -> Arm.Cbnz 
   | "bl" -> Arm.Bl  | "ret" -> Arm.Ret 
   | _ -> arm_error ln insn mnemonic "Invalid mnemonic"
@@ -184,16 +205,6 @@ let operands_of_tokens ((ln, insn) : code_line) (args : string list) : Arm.opera
         [operand_of_string (ln, insn) a1; operand_of_string (ln, insn) a2; operand_of_string (ln, insn) a3]
   | _ -> raise (Invalid_argument "Invalid number of operands")
 
-let tokenize_insn ((ln, line) : code_line) : (code_line * string list) = 
-  if is_empty line then
-    ((ln, line), [])
-  else
-    let line = String.trim line in
-    let parts = String.split_on_char ' ' line in
-    let no_commas = List.map (fun x -> String.split_on_char ',' x) parts |> List.flatten in
-    let no_empty_strs = List.filter (fun x -> not (String.equal x "")) no_commas in 
-    ((ln, line), no_empty_strs)
-
 let parse_insn ((ln, insn) : code_line) (tokens : string list) : Arm.insn =
   if List.length tokens = 0 then
     arm_error ln insn insn "Empty instruction!"
@@ -206,12 +217,52 @@ let parse_insn ((ln, insn) : code_line) (tokens : string list) : Arm.insn =
 let parse_text_block (lines : code_line list) : Arm.block = 
   let (label, rest) = parse_label (List.hd lines) in
   let removed_lines = rest :: (List.tl lines) in
-  let lbl_opt = if String.equal label "" then None else Some(label) in
-  let tokenized_lines = List.map (fun insn_line -> tokenize_insn insn_line) removed_lines in
+  let tokenized_lines = List.map (fun insn_line -> tokenize insn_line) removed_lines in
   let no_empty_lines = List.filter (fun (_, tokens) -> not (List.length tokens = 0)) tokenized_lines in
   let insns = List.map (fun ((ln, insn), tokens) -> parse_insn (ln, insn) tokens) no_empty_lines in
   let is_entry = String.equal label "_start" in
-  {entry=is_entry; lbl=lbl_opt; asm=Arm.IText(insns)}
+  {entry=is_entry; lbl=label; asm=Arm.Text(insns)}
+
+(* data segment parsing *)
+let string_to_bytes (s : string) : int list = 
+  let rec stbh (s : string) (acc : int list) (idx : int) : int list = 
+    if idx = String.length s then acc
+    else stbh s (acc @ [Char.code (String.get s idx)]) (idx + 1)
+  in stbh s [] 0
+
+let parse_quad ((ln, line) : code_line) (tokens : string list) : Arm.data =
+  if List.length tokens = 0 then
+    arm_error ln line line "Empty quad!"
+  else
+    let imm = List.nth tokens 0 in
+    if is_number imm then
+      Arm.Quad(Int64.of_string imm)
+    else
+      arm_error ln line imm "Invalid quad"
+
+let parse_quad_arr ((ln, line) : code_line) (tokens : string list) : Arm.data =
+  if List.length tokens = 0 then
+    arm_error ln line line "Empty quad array!"
+  else
+    let imm = List.nth tokens 0 in
+    if is_number imm then
+      let quads = List.map (fun x -> Int64.of_string x) tokens in
+      Arm.QuadArr(quads)
+    else
+      arm_error ln line imm "Invalid quad array"
+
+let parse_ddef ((ln, line) : code_line) (tokens : string list) : Arm.data =
+  failwith "Not implemented"
+
+let parse_data_block (lines : code_line list) : Arm.block =
+  let (label, rest) = parse_label (List.hd lines) in
+  let removed_lines = rest :: (List.tl lines) in
+  let tokenized_lines = List.map (fun insn_line -> tokenize insn_line) removed_lines in
+  let no_empty_lines = List.filter (fun (_, tokens) -> not (List.length tokens = 0)) tokenized_lines in
+  let data = List.map (fun ((ln, insn), tokens) -> parse_ddef (ln, insn) tokens) no_empty_lines in
+  {entry=false; lbl=label; asm=Arm.Data(data)}
+
+(* assembly parsing *)
 
 let parse_assembly (lines : code_line list) : Arm.prog =
   let global_defs =
@@ -221,6 +272,6 @@ let parse_assembly (lines : code_line list) : Arm.prog =
   let extern_defs = find_defs lines "extern" |> transform_extern_defs in
   let text_directives = List.concat (find_directives lines "text") in
   let text_blocks = find_blocks text_directives in 
-  let text_blocks_parsed = Arm.Text(List.map (fun x -> parse_text_block x) text_blocks) in 
+  let text_blocks_parsed = Arm.TextBlock(List.map (fun x -> parse_text_block x) text_blocks) in 
   extern_defs @ global_defs @ [text_blocks_parsed]
 
