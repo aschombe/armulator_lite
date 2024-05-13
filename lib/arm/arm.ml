@@ -80,11 +80,13 @@ let string_of_data_directive = function
     | Byte _ -> ".byte"
     | String _ -> ".string"
     | Asciz _ -> ".asciz"
+    | _ -> failwith "not implemented"
 let ast_string_of_data_directive = function
     | Quad _ -> "Arm.Quad"
     | Byte _ -> "Arm.Byte"
     | String _ -> "Arm.String"
     | Asciz _ -> "Arm.Asciz"
+    | _ -> failwith "not implemented"
 
 let string_of_opcode = function
     | Mov -> "mov" | Adr -> "adr"
@@ -112,8 +114,8 @@ let ast_string_of_opcode = function
     | Cmp -> "Arm.Cmp" | Cbz -> "Arm.Cbz" | Cbnz -> "Arm.Cbnz" | Bl -> "Arm.Bl" | Ret -> "Arm.Ret"
 
 let string_of_imm = function
-    | Lit i -> "#" ^ Int64.to_string i
-    | Lbl l -> l 
+    | Lit i -> Int64.to_string i
+    | Lbl l -> l
 let ast_string_of_imm = function
     | Lit i -> "Arm.Lit(" ^ Int64.to_string i ^ "L)"
     | Lbl l -> "Arm.Lbl(" ^ l ^ ")"
@@ -157,11 +159,13 @@ let string_of_data = function
     | Byte c -> ".byte " ^ (Char.escaped c)
     | String s -> ".string " ^ s
     | Asciz s -> ".asciz " ^ s 
+    | _ -> failwith "not implemented"
 let ast_string_of_data = function
     | Quad q -> "Arm.Quad(" ^ (Int64.to_string q) ^ "L)"
     | Byte c -> "Arm.Byte('" ^ (Char.escaped c) ^ "')"
     | String s -> "Arm.String(\"" ^ s ^ "\")"
     | Asciz s -> "Arm.Asciz(\"" ^ s ^ "\")"
+    | _ -> failwith "not implemented"
 
 let string_of_insn_list insns = String.concat "\n" (List.map string_of_insn insns)
 let ast_string_of_insn_list insns = String.concat "\n" (List.map ast_string_of_insn insns)
@@ -169,7 +173,7 @@ let string_of_data_list data = String.concat "\n" (List.map string_of_data data)
 let ast_string_of_data_list data = String.concat "\n" (List.map ast_string_of_data data)
 
 let string_of_block { entry=_; lbl; asm } =
-    lbl ^ (match asm with
+    lbl ^ ":\n"^ (match asm with
         | Text insns -> string_of_insn_list insns
         | Data data -> string_of_data_list data)
 

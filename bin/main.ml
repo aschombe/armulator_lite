@@ -21,7 +21,9 @@ let _debug lines =
 let main lines =
   let parsed_insns = Parser.parse_assembly lines in
   let stringified = Arm.ast_string_of_prog parsed_insns in 
-  print_endline stringified
+  let prog = Arm.string_of_prog parsed_insns in
+  print_endline stringified;
+  print_endline prog
 
 let () = 
   let filename = Sys.argv.(1) in

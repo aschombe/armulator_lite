@@ -2,7 +2,9 @@
 
 .text
 _main: 
-    mov x0, #1
+    mov x0, 0b1111
+    mov x1, 0xdead
+    mov x2, 0xbeef
     ret
 
 .data

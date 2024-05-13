@@ -1,4 +1,4 @@
-open Str
+(* open Str *)
 
 exception Syntax_error
 exception Ok
@@ -251,7 +251,7 @@ let parse_quad_arr ((ln, line) : code_line) (tokens : string list) : Arm.data =
     else
       arm_error ln line imm "Invalid quad array"
 
-let parse_ddef ((ln, line) : code_line) (tokens : string list) : Arm.data =
+let parse_ddef ((_ln, _line) : code_line) (_tokens : string list) : Arm.data =
   failwith "Not implemented"
 
 let parse_data_block (lines : code_line list) : Arm.block =
