@@ -14,6 +14,7 @@ let arm_error (ln : int) (line : string) (highlight : string) (msg : string) : '
     raise (Syntax_error)
 
 (* string parsing *)
+(* result, errinfo, rest of string *)
 let extract_string ((ln, line): code_line) : (string * code_line * string) = 
   let char_list = String.to_seq line |> List.of_seq in
   let rec esh ((ln, line): code_line) (chars: char list) (is_in_str: bool) (did_match: bool) (matched: string) (rest: string): (string * string) =
@@ -435,9 +436,9 @@ let parse_assembly (lines : code_line list) : Arm.prog =
   let extern_defs = find_defs lines "extern" |> transform_extern_defs in
   let text_directives = List.concat (find_directives lines "text") in
   let text_blocks = find_blocks text_directives in 
-  let text_blocks_parsed = Arm.TextBlock(List.map (fun x -> parse_text_block x) text_blocks) in 
+  let text_blocks_parsed = Arm.TextDirect(List.map (fun x -> parse_text_block x) text_blocks) in 
   let data_directives = List.concat (find_directives lines "data") in 
   let data_blocks = find_blocks data_directives in 
-  let data_blocks_parsed = Arm.DataBlock(List.map (fun x -> parse_data_block x) data_blocks) in 
+  let data_blocks_parsed = Arm.DataDirect(List.map (fun x -> parse_data_block x) data_blocks) in 
   extern_defs @ global_defs @ [text_blocks_parsed] @ [data_blocks_parsed] 
 

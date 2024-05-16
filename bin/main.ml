@@ -19,12 +19,10 @@ let _debug lines =
   List.iter (fun codelines -> Parser.print_code_lines codelines) data_directives
 
 let main lines =
-  let parsed_insns = Parser.parse_assembly lines in
-  let stringified = Arm.ast_string_of_prog parsed_insns in 
-  let prog = Arm.string_of_prog parsed_insns in
-  print_endline stringified;
-  print_endline "----------------";
-  print_endline prog
+  let prog = Parser.parse_assembly lines in
+  let stringified = Arm.ast_string_of_prog prog in 
+  let _m = Mach.init prog in
+  print_endline stringified
 
 let () = 
   let filename = Sys.argv.(1) in

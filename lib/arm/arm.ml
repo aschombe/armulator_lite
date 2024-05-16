@@ -56,8 +56,8 @@ type block = { entry: bool; lbl: lbl; asm: asm }
 type tld = 
     | GloblDef of string
     | ExternSym of string
-    | TextBlock of block list
-    | DataBlock of block list
+    | TextDirect of block list
+    | DataDirect of block list
 
 (* a complete program contains a .gloabl, .text, and .data section, but we also need to support external symbols *)
 type prog = tld list
@@ -65,13 +65,13 @@ type prog = tld list
 let string_of_top_level_directive = function
     | GloblDef _ -> ".globl"
     | ExternSym _ -> ".extern"
-    | TextBlock _ -> ".text"
-    | DataBlock _ -> ".data"
+    | TextDirect _ -> ".text"
+    | DataDirect _ -> ".data"
 let ast_string_of_top_level_directive = function 
     | GloblDef _ -> "Arm.Globl"
     | ExternSym _ -> "Arm.Extern"
-    | TextBlock _ -> "Arm.Text"
-    | DataBlock _ -> "Arm.Data"
+    | TextDirect _ -> "Arm.Text"
+    | DataDirect _ -> "Arm.Data"
 
 let string_of_data_directive = function
     | Quad _ -> ".quad"
@@ -182,12 +182,12 @@ let rec string_of_prog prog =
     | [] -> ""
     | GloblDef s :: tl -> ".globl " ^ s ^ "\n" ^ (string_of_prog tl) 
     | ExternSym s :: tl -> ".extern " ^ s ^ "\n" ^ (string_of_prog tl) 
-    | TextBlock blocks :: tl -> ".text\n" ^ (String.concat "\n" (List.map string_of_block blocks)) ^ "\n" ^ (string_of_prog tl) 
-    | DataBlock blocks :: tl -> ".data\n" ^ (String.concat "\n" (List.map string_of_block blocks)) ^ "\n" ^ (string_of_prog tl) 
+    | TextDirect blocks :: tl -> ".text\n" ^ (String.concat "\n" (List.map string_of_block blocks)) ^ "\n" ^ (string_of_prog tl) 
+    | DataDirect blocks :: tl -> ".data\n" ^ (String.concat "\n" (List.map string_of_block blocks)) ^ "\n" ^ (string_of_prog tl) 
 let rec ast_string_of_prog prog =
     match prog with
     | [] -> ""
     | GloblDef s :: tl -> "Arm.GloblDef(\"" ^ s ^ "\")\n" ^ (ast_string_of_prog tl) 
     | ExternSym s :: tl -> "Arm.ExternSym(\"" ^ s ^ "\")\n" ^ (ast_string_of_prog tl) 
-    | TextBlock blocks :: tl -> "Arm.TextBlock([\n" ^ (String.concat ";\n" (List.map ast_string_of_block blocks)) ^ "\n])" ^ (ast_string_of_prog tl) 
-    | DataBlock blocks :: tl -> "Arm.DataBlock([\n" ^ (String.concat ";\n" (List.map ast_string_of_block blocks)) ^ "\n])" ^ (ast_string_of_prog tl)
+    | TextDirect blocks :: tl -> "Arm.TextDirect([\n" ^ (String.concat ";\n" (List.map ast_string_of_block blocks)) ^ "\n])" ^ (ast_string_of_prog tl) 
+    | DataDirect blocks :: tl -> "Arm.DataBlock([\n" ^ (String.concat ";\n" (List.map ast_string_of_block blocks)) ^ "\n])" ^ (ast_string_of_prog tl)

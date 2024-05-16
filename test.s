@@ -1,7 +1,7 @@
-.global _main
+.global _start
 
 .text
-_main: 
+_start: 
     mov x0, 0b1111
     mov x1, 0xdead
     mov x2, 0xbeef
