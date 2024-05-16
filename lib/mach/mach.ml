@@ -1,6 +1,6 @@
 exception Ok 
-exception Segmentation_fault
-exception No_entrypoint
+exception Segmentation_fault of string
+exception No_entrypoint 
 
 let mem_bot = 0x400000L          (* lowest valid address *)
 let mem_top = 0x410000L          (* one past the last byte in memory *)
@@ -11,6 +11,7 @@ let exit_addr = 0xfdeadL         (* halt when pc = exit_addr *)
 
 type sbyte = 
 | InsFill 
+| ExternSym of string
 | Insn of Arm.insn 
 | Byte of char
 
@@ -54,12 +55,6 @@ let get_insn (m: mach) (addr: int64) : Arm.insn =
   | Insn i -> i
   | _ -> raise (Invalid_argument "get_insn")
 
-let get_byte (m: mach) (addr: int64) : sbyte =
-  let i = map_addr addr in
-  match m.mem.(i) with
-  | Byte b -> Byte b
-  | _ -> raise (Invalid_argument "get_byte")
-
 let mach_error (m: mach) (highlight : string) (msg : string) : 'a =
   if highlight <> "_start" then 
     let insn = get_insn m m.pc in
@@ -68,38 +63,13 @@ let mach_error (m: mach) (highlight : string) (msg : string) : 'a =
     let () = Printf.fprintf Out_channel.stderr "\x1b[1;91mSyntax error \x1b[0mat address\x1b[1;97m0x%x\x1b[0m:" (m.pc |> Int64.to_int) in
     let () = Printf.fprintf Out_channel.stderr " %s '%s'.\n\n" msg highlight in
     let () = Printf.fprintf Out_channel.stderr "\t%s\n\n" highlighted_line in
-    raise (Segmentation_fault)
+    raise (Segmentation_fault msg)
   else
     let highlighted_line = Str.global_replace (Str.regexp highlight) ("\x1b[1;91m" ^ highlight ^ "\x1b[0m") "No label '_start' defined!" in
     let () = Printf.fprintf Out_channel.stderr "\x1b[1;91mSyntax error \x1b[0mat address\x1b[1;97m0x%x\x1b[0m:" (m.pc |> Int64.to_int) in
     let () = Printf.fprintf Out_channel.stderr " %s '%s'.\n\n" msg highlight in
     let () = Printf.fprintf Out_channel.stderr "\t%s\n\n" highlighted_line in
     raise (No_entrypoint)
-
-let load_quad (m: mach) (addr: int64) : int64 =
-  let bytes = Array.init 8 (fun i -> get_byte m (Int64.add addr (Int64.of_int i))) in
-  let f b i = match b with
-    | Byte c -> Int64.logor (Int64.shift_left i 8) (c |> Char.code |> Int64.of_int)
-    | _ -> 0L
-  in Array.fold_right f bytes 0L
-
-let load_byte (m: mach) (addr: int64) : char = 
-  match get_byte m addr with
-  | Byte c -> c
-  | _ -> raise (Invalid_argument "load_byte")
-
-let store_byte (m: mach) (addr: int64) (b: char) : unit =
-  let i = map_addr addr in
-  m.mem.(i) <- Byte b 
-
-let store_quad (m: mach) (addr: int64) (q: int64) : unit =
-  let bytes = Array.init 8 (fun i -> Int64.to_int (Int64.logand (Int64.shift_right_logical q (i * 8)) 0xffL) |> Char.chr) in
-  Array.iteri (fun i b -> store_byte m (Int64.add addr (Int64.of_int i)) b) bytes 
-
-let encode_insn (i: Arm.insn) : sbyte array =
-  let buf = Array.make 8 InsFill in
-  buf.(0) <- Insn i;
-  buf
 
 let gen_layout (prog: Arm.prog) : (string * int64) list =
   let text_block_layout ({entry=_; lbl=l; asm}: Arm.block) (offset: int64) : (int64 * (string * int64)) =
@@ -129,7 +99,7 @@ let gen_layout (prog: Arm.prog) : (string * int64) list =
     | h::t ->
         let (offset, kvps) = begin
           match h with
-          | Arm.GloblDef label -> (Int64.add insn_size offset, [(label, offset)])
+          | Arm.GloblDef _ -> (offset, [])
           | Arm.ExternSym label -> (Int64.add insn_size offset, [(label, offset)])
           | Arm.TextDirect block -> List.fold_left (fun (offset_acc, kvps_acc) insn -> 
               let (offset, kvps) = text_block_layout insn offset_acc in
@@ -144,15 +114,53 @@ let gen_layout (prog: Arm.prog) : (string * int64) list =
   let pre_obfuscation = compute_layout prog 0L in 
   List.map (fun (label, offset) -> (label, Int64.add offset mem_bot)) pre_obfuscation
 
-let lookup_label (m: mach) (label: string) : int64 =
-  let rec lookup_label' (layout: (string * int64) list) (label: string) : int64 =
-    match layout with
-    | [] -> mach_error m label "Label not defined"
-    | (l, offset)::t -> if l = label then offset else lookup_label' t label
-  in lookup_label' m.layout label
+let rec lookup_label (layout: (string * int64) list) (label: string) : int64 =
+  match layout with
+  | [] -> raise (Segmentation_fault ("Label '" ^ label ^ "' not found"))
+  | (l, offset)::t -> if l = label then offset else lookup_label t label
+
+let sbytes_of_int64 (i:int64) : sbyte list =
+  let open Char in 
+  let open Int64 in
+  List.map (fun n -> Byte (shift_right i n |> logand 0xffL |> to_int |> chr))
+           [0; 8; 16; 24; 32; 40; 48; 56]
+
+let int64_of_sbytes (bs:sbyte list) : int64 =
+  let open Char in
+  let open Int64 in
+  let f b i = match b with
+    | Byte c -> logor (shift_left i 8) (c |> code |> of_int)
+    | _ -> 0L
+  in
+  List.fold_right f bs 0L
+
+let build_program (prog: Arm.prog) : sbyte list =
+  let build_insn (insn: Arm.insn) : sbyte list = [Insn insn; InsFill; InsFill; InsFill; InsFill; InsFill; InsFill; InsFill] in
+  let build_data (data: Arm.data) : sbyte list = 
+    match data with
+    | Arm.Quad n -> sbytes_of_int64 n
+    | Arm.Byte c -> [Byte (c |> Char.chr)]
+    | Arm.QuadArr arr -> List.concat (List.map (fun n -> sbytes_of_int64 n) arr)
+    | Arm.ByteArr arr -> List.map (fun c -> Byte (c |> Char.chr)) arr
+  in 
+  let build_block (block: Arm.block) : sbyte list =
+    match block with
+    | {entry=_; lbl=_; asm=Arm.Text insns} -> List.concat (List.map build_insn insns)
+    | {entry=_; lbl=_; asm=Arm.Data data} -> List.concat (List.map build_data data)
+  in 
+  let build_directive (dir: Arm.tld) : sbyte list =
+    match dir with
+    | Arm.GloblDef _ -> []
+    | Arm.ExternSym s -> [ExternSym s]
+    | Arm.TextDirect blocks
+    | Arm.DataDirect blocks -> List.concat (List.map build_block blocks)
+  in
+  List.concat (List.map build_directive prog)
 
 let init (prog: Arm.prog) : mach =
-  let mem = Array.make mem_size InsFill in
+  let program_bytes = build_program prog |> Array.of_list in
+  let mem = Array.make mem_size InsFill in 
+  Array.blit program_bytes 0 mem 0 (Array.length program_bytes);
   let regs = Array.make nregs 0L in
   let rec get_entry_addr (map: (string * int64) list) : int64 =
     match map with
@@ -168,3 +176,23 @@ let init (prog: Arm.prog) : mach =
     mem = mem;
     flags = { n = false; z = false; c = false; v = false; }
   }
+
+let print_sbyte_array (mem: sbyte array) (max_rows: int) : unit =
+  let max_rows = max_rows * 8 in
+  print_char '[';
+  let print_byte byte = 
+    match byte with
+    | InsFill -> Printf.printf "InsFill, "
+    | ExternSym s -> Printf.printf "ExternSym %s, " s
+    | Insn i -> Printf.printf "Insn %s, " (Arm.ast_string_of_insn i)
+    | Byte c -> Printf.printf "Byte '%s', " (c |> Char.escaped)
+  in 
+  Array.iteri (fun i byte -> 
+    if i > max_rows then Printf.printf ""
+    else
+      begin
+        if i mod 8 = 0 then Printf.printf "]\n[";
+        print_byte byte;
+        Printf.printf " "
+      end
+  ) mem; print_char ']'

@@ -20,9 +20,9 @@ let _debug lines =
 
 let main lines =
   let prog = Parser.parse_assembly lines in
-  let stringified = Arm.ast_string_of_prog prog in 
-  let _m = Mach.init prog in
-  print_endline stringified
+  let _stringified = Arm.ast_string_of_prog prog in 
+  let m = Mach.init prog in
+  Mach.print_sbyte_array m.mem 20
 
 let () = 
   let filename = Sys.argv.(1) in
