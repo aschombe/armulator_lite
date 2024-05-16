@@ -22,6 +22,7 @@ type flags = {
   mutable v: bool; (* signed overflow flag is set if the result of any instruction causes an overflow *)
 }
 
+
 type mach = {
     entry: int64;
     layout: (string * int64) list;
@@ -30,6 +31,8 @@ type mach = {
     mem: sbyte array;
     flags: flags;
 }
+
+type t = mach
 
 let reg_index = function
   | Arm.X0 -> 0 | Arm.X1 -> 1 | Arm.X2 -> 2 | Arm.X3 -> 3 

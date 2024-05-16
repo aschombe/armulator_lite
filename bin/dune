@@ -1,5 +1,5 @@
 (executable
  (public_name armulator_lite)
  (name main)
- (modules main parser)
- (libraries arm str mach))
+ (modules main parser emulator)
+ (libraries arm mach str))
