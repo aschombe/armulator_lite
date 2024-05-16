@@ -41,10 +41,8 @@ type insn = opcode * operand list
 type data = 
     | Quad of quad
     | QuadArr of quad list
-    | Byte of char 
-    | ByteArr of char list
-    | String of string
-    | Asciz of string
+    | Byte of int
+    | ByteArr of int list
 
 type asm = 
     | Text of insn list
@@ -78,15 +76,13 @@ let ast_string_of_top_level_directive = function
 let string_of_data_directive = function
     | Quad _ -> ".quad"
     | Byte _ -> ".byte"
-    | String _ -> ".string"
-    | Asciz _ -> ".asciz"
-    | _ -> failwith "not implemented"
+    | QuadArr _ -> ".quad" 
+    | ByteArr _ -> ".byte"
 let ast_string_of_data_directive = function
     | Quad _ -> "Arm.Quad"
     | Byte _ -> "Arm.Byte"
-    | String _ -> "Arm.String"
-    | Asciz _ -> "Arm.Asciz"
-    | _ -> failwith "not implemented"
+    | QuadArr _ -> "Arm.QuadArr"
+    | ByteArr _ -> "Arm.ByteArr"
 
 let string_of_opcode = function
     | Mov -> "mov" | Adr -> "adr"
@@ -156,16 +152,15 @@ let ast_string_of_insn (op, ops) =
 
 let string_of_data = function
     | Quad q -> ".quad " ^ (Int64.to_string q)
-    | Byte c -> ".byte " ^ (Char.escaped c)
-    | String s -> ".string " ^ s
-    | Asciz s -> ".asciz " ^ s 
-    | _ -> failwith "not implemented"
+    | Byte c -> ".byte " ^ (Printf.sprintf "0x%02x" c)
+    | QuadArr qs -> ".quad " ^ (String.concat ", " (List.map (fun q -> Int64.to_string q) qs))
+    | ByteArr cs -> ".byte " ^ (String.concat ", " (List.map (fun co -> Printf.sprintf "0x%02x" co) cs))
+
 let ast_string_of_data = function
     | Quad q -> "Arm.Quad(" ^ (Int64.to_string q) ^ "L)"
-    | Byte c -> "Arm.Byte('" ^ (Char.escaped c) ^ "')"
-    | String s -> "Arm.String(\"" ^ s ^ "\")"
-    | Asciz s -> "Arm.Asciz(\"" ^ s ^ "\")"
-    | _ -> failwith "not implemented"
+    | Byte c -> "Arm.Byte(" ^ (Printf.sprintf "0x%02x" c) ^ ")"
+    | QuadArr qs -> "Arm.QuadArr([" ^ (String.concat "; " (List.map (fun q -> Int64.to_string q) qs)) ^ "])"
+    | ByteArr cs -> "Arm.ByteArr([" ^ (String.concat "; " (List.map (fun co -> Printf.sprintf "0x%02x" co) cs)) ^ "])"
 
 let string_of_insn_list insns = String.concat "\n" (List.map string_of_insn insns)
 let ast_string_of_insn_list insns = String.concat "\n" (List.map ast_string_of_insn insns)

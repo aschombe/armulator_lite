@@ -9,8 +9,7 @@ _main:
 
 .data
 hello_str: .asciz "Hello, World!\n"
-hello_len: .word 14
-other_data: .skip 100
+hello_len: .quad 14
 arr: .byte 1, 2, 3, 4, 5
-arr_len: .word 5
+arr_len: .quad 5
 

@@ -23,6 +23,7 @@ let main lines =
   let stringified = Arm.ast_string_of_prog parsed_insns in 
   let prog = Arm.string_of_prog parsed_insns in
   print_endline stringified;
+  print_endline "----------------";
   print_endline prog
 
 let () = 
