@@ -1,5 +1,3 @@
-(* open Str *)
-
 exception Syntax_error
 exception Ok
 
