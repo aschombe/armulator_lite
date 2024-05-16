@@ -2,12 +2,7 @@ exception Ok
 exception Segmentation_fault of string
 exception No_entrypoint 
 
-let mem_bot = 0x400000L          (* lowest valid address *)
-let mem_top = 0x410000L          (* one past the last byte in memory *)
-let mem_size = Int64.to_int (Int64.sub mem_top mem_bot)
-let nregs = 32
-let insn_size = 8L                (* 8-byte encoding *)
-let exit_addr = 0xfdeadL         (* halt when pc = exit_addr *)
+let insn_size = 8L
 
 type sbyte = 
 | InsFill 
@@ -22,10 +17,18 @@ type flags = {
   mutable v: bool; (* signed overflow flag is set if the result of any instruction causes an overflow *)
 }
 
+type mach_info = {
+  mem_bot: int64;
+  mem_size: int64;
+  mem_top: int64;
+  nregs: int;
+  exit_val: int64;
+  entry: (string * int64);
+  layout: (string * int64) list;
+}
 
 type mach = {
-    entry: int64;
-    layout: (string * int64) list;
+    info: mach_info;
     regs: int64 array;
     pc: int64;
     mem: sbyte array;
@@ -45,15 +48,15 @@ let reg_index = function
   | Arm.X26 -> 26 | Arm.X27 -> 27 | Arm.X28 -> 28 
   | Arm.SP -> 29 | Arm.XZR -> 31 | Arm.LR -> 30 
 
-let map_addr addr = 
-  let addr = Int64.add addr mem_bot in
-  if addr < mem_bot || addr >= mem_top then
+let map_addr (m: mach) (addr: int64) : int = 
+  let addr = Int64.add addr m.info.mem_bot in
+  if addr < m.info.mem_bot || addr >= m.info.mem_top then
     raise (Invalid_argument "map_addr")
   else
-    Int64.to_int (Int64.sub addr mem_bot)
+    Int64.to_int (Int64.sub addr m.info.mem_bot)
 
 let get_insn (m: mach) (addr: int64) : Arm.insn =
-  let i = map_addr addr in
+  let i = map_addr m addr in
   match m.mem.(i) with
   | Insn i -> i
   | _ -> raise (Invalid_argument "get_insn")
@@ -74,7 +77,7 @@ let mach_error (m: mach) (highlight : string) (msg : string) : 'a =
     let () = Printf.fprintf Out_channel.stderr "\t%s\n\n" highlighted_line in
     raise (No_entrypoint)
 
-let gen_layout (prog: Arm.prog) : (string * int64) list =
+let gen_layout (m: mach) (prog: Arm.prog) : (string * int64) list =
   let text_block_layout ({entry=_; lbl=l; asm}: Arm.block) (offset: int64) : (int64 * (string * int64)) =
     let block_size = begin match asm with
       | Arm.Text insns -> List.length insns |> Int64.of_int
@@ -115,7 +118,7 @@ let gen_layout (prog: Arm.prog) : (string * int64) list =
           end in kvps @ (compute_layout t (Int64.add offset insn_size))
   in 
   let pre_obfuscation = compute_layout prog 0L in 
-  List.map (fun (label, offset) -> (label, Int64.add offset mem_bot)) pre_obfuscation
+  List.map (fun (label, offset) -> (label, Int64.add offset m.info.mem_bot)) pre_obfuscation
 
 let rec lookup_label (layout: (string * int64) list) (label: string) : int64 =
   match layout with
@@ -160,22 +163,45 @@ let build_program (prog: Arm.prog) : sbyte list =
   in
   List.concat (List.map build_directive prog)
 
-let init (prog: Arm.prog) : mach =
+(* default machine has
+  mem_bot = 0x400000L 
+  mem_size = 0x10000L 
+  mem_top = 0x410000L 
+  nregs = 32 
+  exit_val = 0xfdeadL
+  *)
+
+let init (prog: Arm.prog) (mem_bot: int64 option) (mem_size: int option) (exit_val: int64 option) (entry_label: string option) : mach = 
+  let u_mem_bot = match mem_bot with | Some x -> x | None -> 0x400000L in 
+  let u_mem_size = match mem_size with | Some x -> x | None -> 0x10000 in 
+  let u_mem_top = Int64.add u_mem_bot (u_mem_size |> Int64.of_int) in 
+  let u_exit_val = match exit_val with | Some x -> x | None -> 0xfdeadL in 
+  let nregs = 32 in 
+  let u_entry_label = match entry_label with | Some x -> x | None -> "_start" in
+  let minfo = {
+    mem_bot = u_mem_bot;
+    mem_size = u_mem_size |> Int64.of_int;
+    mem_top = u_mem_top;
+    nregs = nregs;
+    exit_val = u_exit_val;
+    entry = (u_entry_label, 0L);
+    layout = [];
+  } in
   let program_bytes = build_program prog |> Array.of_list in
-  let mem = Array.make mem_size InsFill in 
+  let mem = Array.make u_mem_size InsFill in 
   Array.blit program_bytes 0 mem 0 (Array.length program_bytes);
   let regs = Array.make nregs 0L in
+  let tmp_mach = { info = minfo; regs; pc = 0L; mem; flags = { n = false; z = false; c = false; v = false; } } in 
   let rec get_entry_addr (map: (string * int64) list) : int64 =
     match map with
-    | [] -> mach_error { entry = 0L; layout = map; regs; pc = 0L; mem; flags = { n = false; z = false; c = false; v = false; } } "_start" "Entry point not defined"
-    | (l, offset)::t -> if l = "_start" then offset else get_entry_addr t
+    | [] -> mach_error tmp_mach u_entry_label "Entry point not defined"
+    | (l, offset)::t -> if l = u_entry_label then offset else get_entry_addr t
   in
-  let layout = gen_layout prog in 
-  regs.(reg_index Arm.SP) <- mem_top;
-  { entry = get_entry_addr layout;
-    layout = layout;
+  let layout = gen_layout tmp_mach prog in 
+  regs.(reg_index Arm.SP) <- u_mem_top;
+  { info = { minfo with layout = layout; entry = (u_entry_label, get_entry_addr layout) };
     regs = regs;
-    pc = mem_bot;
+    pc = (snd minfo.entry);
     mem = mem;
     flags = { n = false; z = false; c = false; v = false; }
   }
@@ -199,3 +225,12 @@ let print_sbyte_array (mem: sbyte array) (max_rows: int) : unit =
         Printf.printf " "
       end
   ) mem; print_char ']'
+
+(* default machine has
+ mem_bot = 0x400000L
+ mem_size = 0x10000L
+ mem_top = 0x410000L
+ nregs = 32
+ insn_size = 8L
+ exit_val = 0xfdeadL
+ *)

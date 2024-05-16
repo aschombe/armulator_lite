@@ -2,4 +2,5 @@
  (public_name armulator_lite)
  (name main)
  (modules main parser emulator)
+ (promote (until-clean))
  (libraries arm mach str))
