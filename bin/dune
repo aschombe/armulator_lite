@@ -1,6 +1,6 @@
 (executable
  (public_name armulator_lite)
  (name main)
- (modules main parser emulator)
+ (modules main emulator)
  (promote (until-clean))
- (libraries arm mach str))
+ (libraries arm str mach arm_parser))

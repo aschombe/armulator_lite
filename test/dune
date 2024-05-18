@@ -1,2 +1,4 @@
 (test
- (name test_armulator_lite))
+ (name test_armulator_lite)
+ (libraries arm arm_parser)
+ (deps (glob_files_rec ../armprograms/*)))
