@@ -1,0 +1,6 @@
+(library
+  (name arm_parser)
+  (modules arm_parser)
+  (libraries arm str))
+
+

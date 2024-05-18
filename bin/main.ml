@@ -12,6 +12,8 @@
 let debug = ref false 
 let validate = ref false 
 let write_arm = ref false 
+let print_ast = ref false
+let print_machine_state = ref false
 let input_file = ref "" 
 let output_file = ref ""
 
@@ -20,7 +22,7 @@ let mem_size = ref 0x10000
 let exit_val = ref 0xfdead 
 let entry_label = ref "_start" 
 
-let read_file (file:string) : Parser.code_line list =
+let read_file (file:string) : Arm_parser.code_line list =
   let lines = ref [] in
   let ln = ref 1 in
   let channel = open_in file in
@@ -38,31 +40,36 @@ let write_file (file:string) (contents: string) : unit =
   close_out channel
 
 let _debug lines = 
-  let text_directives = Parser.find_directives lines "text" in 
-  let data_directives = Parser.find_directives lines "data" in 
+  let text_directives = Arm_parser.find_directives lines "text" in 
+  let data_directives = Arm_parser.find_directives lines "data" in 
   print_endline "Text Directives:";
-  List.iter (fun codelines -> Parser.print_code_lines codelines) text_directives;
+  List.iter (fun codelines -> Arm_parser.print_code_lines codelines) text_directives;
   print_endline "Data Directives:";
-  List.iter (fun codelines -> Parser.print_code_lines codelines) data_directives
+  List.iter (fun codelines -> Arm_parser.print_code_lines codelines) data_directives
 
 let main lines =
-  let prog = Parser.parse_assembly lines in
+  let prog = Arm_parser.parse_assembly lines in
   if !output_file <> "" then write_file !output_file (Arm.string_of_prog prog);
   let _stringified = Arm.ast_string_of_prog prog in 
   let m = Mach.init prog (Some(!mem_bot |> Int64.of_int)) (Some(!mem_size)) (Some(!exit_val |> Int64.of_int)) (Some(!entry_label)) in
-  Emulator.run m;
-  ()
+  if !debug then _debug lines; 
+  if !print_ast then print_endline (Arm.ast_string_of_prog prog);
+  if !validate then () else Emulator.run m
+
 
 let args =
   [ ("--debug", Arg.Set debug, "Print debug information");
+    ("--print-ast", Arg.Set print_ast, "Print the AST");
+    ("--print-machine-state", Arg.Set print_machine_state, "Print the machine state");
     ("--validate-only", Arg.Set validate, "Validate the input file");
     ("--write-arm", Arg.Set write_arm, "Write the ARM assembly to a file");
-    ("-f", Arg.Set_string input_file, "Input assembly file");
-    ("-o", Arg.Set_string output_file, "Output assembly file");
+    ("--file", Arg.Set_string input_file, "Input assembly file");
+    ("--out", Arg.Set_string output_file, "Output assembly file");
     ("--base-addr", Arg.Set_int (mem_bot), "Base memory address");
     ("--stack-size", Arg.Set_int (mem_size), "Program stack size");
     ("--exit-val", Arg.Set_int (exit_val), "End program when pc is this value");
-    ("--entry-label", Arg.Set_string entry_label, "Entry label") ]
+    ("--entry-label", Arg.Set_string entry_label, "Entry label");
+  ]
 
 let () = 
   Arg.parse args (fun _ -> ()) "Usage: ./main.native [options]";
