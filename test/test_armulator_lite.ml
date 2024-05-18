@@ -27,14 +27,17 @@ let run1_ast : Arm.prog = [
     ])
 ]
 
-let prog_eq (p1: Arm.prog) (p2: Arm.prog) : (bool * string * string) = 
-    let s_p1 = Arm.string_of_prog p1 in 
-    let s_p2 = Arm.string_of_prog p2 in 
+let conditional_logic_ast : Arm.prog = []
+
+let prog_eq (received: Arm.prog) (expected: Arm.prog) : (bool * string * string) = 
+    let s_p2 = Arm.string_of_prog expected in 
+    let s_p1 = Arm.string_of_prog received in
     (s_p1 = s_p2, s_p1, s_p2)
 
 (* test name, file, expected AST *)
 let armprograms = [
     ("run1", "armprograms/run1.s", run1_ast);
+    ("conditional_logic", "armprograms/conditional_logic.s", conditional_logic_ast);
 ]
 
 let read_file (file:string) : Arm_parser.code_line list =
@@ -54,7 +57,7 @@ let run_arm_test (_name, file, expected) : (bool * string * string) =
     try 
         let ast = Arm_parser.parse_assembly lines in 
         prog_eq ast expected
-    with _ -> (false, "error", "error")
+    with _ -> (false, "parse error", Arm.string_of_prog expected)
 
 let run_arm_tests () : bool =
     let count = ref 0 in 
@@ -72,7 +75,7 @@ let run_arm_tests () : bool =
             Printf.printf "got:\n%s\n" r1;
         end
     ) armprograms;
-    Printf.printf "Passed %d/%d tests\n" !passed !count; 
+    Printf.printf "passed %d/%d tests - %.2f%%\n" !passed !count ((float_of_int !passed) /. (float_of_int !count) *. 100.0); 
     !passed = !count
 
 let _ = assert(run_arm_tests())
