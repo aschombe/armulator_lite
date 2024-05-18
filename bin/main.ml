@@ -49,7 +49,8 @@ let main lines =
   let prog = Parser.parse_assembly lines in
   if !output_file <> "" then write_file !output_file (Arm.string_of_prog prog);
   let _stringified = Arm.ast_string_of_prog prog in 
-  let _m = Mach.init prog (Some(!mem_bot |> Int64.of_int)) (Some(!mem_size)) (Some(!exit_val |> Int64.of_int)) (Some(!entry_label)) in
+  let m = Mach.init prog (Some(!mem_bot |> Int64.of_int)) (Some(!mem_size)) (Some(!exit_val |> Int64.of_int)) (Some(!entry_label)) in
+  Emulator.run m;
   ()
 
 let args =

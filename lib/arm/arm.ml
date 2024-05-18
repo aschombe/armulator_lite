@@ -146,7 +146,7 @@ let ast_string_of_operand = function
     | Offset(Ind3 (r, i)) -> "Arm.Offset(Arm.Ind3(" ^ (ast_string_of_reg r) ^ ", " ^ (ast_string_of_imm i) ^ "))"
 
 let string_of_insn (op, ops) =
-    "\t" ^ (string_of_opcode op) ^ " " ^ (String.concat ", " (List.map string_of_operand ops))
+    (string_of_opcode op) ^ " " ^ (String.concat ", " (List.map string_of_operand ops))
 let ast_string_of_insn (op, ops) =
     "\tArm.Insn(" ^ (ast_string_of_opcode op) ^ ", [" ^ (String.concat "; " (List.map ast_string_of_operand ops)) ^ "])"
 

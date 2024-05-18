@@ -29,9 +29,9 @@ type mach_info = {
 
 type mach = {
     info: mach_info;
-    regs: int64 array;
-    pc: int64;
-    mem: sbyte array;
+    mutable regs: int64 array;
+    mutable pc: int64;
+    mutable mem: sbyte array;
     flags: flags;
 }
 
@@ -66,7 +66,7 @@ let mach_error (m: mach) (highlight : string) (msg : string) : 'a =
     let insn = get_insn m m.pc in
     let str_insn = Arm.string_of_insn insn in
     let highlighted_line = Str.global_replace (Str.regexp highlight) ("\x1b[1;91m" ^ highlight ^ "\x1b[0m") str_insn in
-    let () = Printf.fprintf Out_channel.stderr "\x1b[1;91mSyntax error \x1b[0mat address\x1b[1;97m0x%x\x1b[0m:" (m.pc |> Int64.to_int) in
+    let () = Printf.fprintf Out_channel.stderr "\x1b[1;91mSyntax error \x1b[0mat address \x1b[1;97m0x%x\x1b[0m:" (m.pc |> Int64.to_int) in
     let () = Printf.fprintf Out_channel.stderr " %s '%s'.\n\n" msg highlight in
     let () = Printf.fprintf Out_channel.stderr "\t%s\n\n" highlighted_line in
     raise (Segmentation_fault msg)
