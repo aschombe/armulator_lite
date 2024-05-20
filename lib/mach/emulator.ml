@@ -20,7 +20,7 @@ let run (m: Mach.t) : unit =
   let rec loop (m: Mach.t) : unit = 
     let m' = step m in 
     m'.pc <- (Int64.add m'.pc 8L);
-    if m'.pc = m'.info.exit_val then () else
+    if m'.pc = m'.info.exit_val || m'.regs.(Mach.reg_index Arm.SP) = m'.info.exit_val then () else
     loop m'
   in loop m 
 

@@ -16,11 +16,15 @@ let string_of_data_directive = function
     | Byte _ -> ".byte"
     | QuadArr _ -> ".quad" 
     | ByteArr _ -> ".byte"
+    | Word _ -> ".word"
+    | WordArr _ -> ".word"
 let ast_string_of_data_directive = function
     | Quad _ -> "Arm.Quad"
     | Byte _ -> "Arm.Byte"
     | QuadArr _ -> "Arm.QuadArr"
     | ByteArr _ -> "Arm.ByteArr"
+    | Word _ -> "Arm.Word" 
+    | WordArr _ -> "Arm.WordArr" 
 
 let string_of_opcode = function
     | Mov -> "mov" | Adr -> "adr"
@@ -95,12 +99,16 @@ let string_of_data = function
     | Byte c -> ".byte " ^ (Printf.sprintf "0x%02x" c)
     | QuadArr qs -> ".quad " ^ (String.concat ", " (List.map (fun q -> Int64.to_string q) qs))
     | ByteArr cs -> ".byte " ^ (String.concat ", " (List.map (fun co -> Printf.sprintf "0x%02x" co) cs))
+    | Word w -> ".word " ^ (Int32.to_string w) 
+    | WordArr ws -> ".word " ^ (String.concat ", " (List.map (fun w -> Int32.to_string w) ws))
 
 let ast_string_of_data = function
     | Quad q -> "Arm.Quad(" ^ (Int64.to_string q) ^ "L)"
     | Byte c -> "Arm.Byte(" ^ (Printf.sprintf "'%c'" (Char.chr c)) ^ ")"
     | QuadArr qs -> "Arm.QuadArr([" ^ (String.concat "; " (List.map (fun q -> Int64.to_string q) qs)) ^ "])"
     | ByteArr cs -> "Arm.ByteArr([" ^ (String.concat "; " (List.map (fun co -> Printf.sprintf "%c" (Char.chr co)) cs)) ^ "])"
+    | Word w -> "Arm.Word(" ^ (Int32.to_string w) ^ "l)" 
+    | WordArr ws -> "Arm.WordArr([" ^ (String.concat "; " (List.map (fun w -> Int32.to_string w) ws)) ^ "])"
 
 let string_of_insn_list insns = String.concat "\n" (List.map string_of_insn insns)
 let ast_string_of_insn_list insns = String.concat ";\n" (List.map ast_string_of_insn insns)
