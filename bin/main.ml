@@ -73,7 +73,7 @@ let args =
   ]
 
 let () = 
-  Arg.parse args (fun _ -> ()) "Usage: ./main.native [options]";
+  Arg.parse args (fun _ -> ()) "Usage: ./arml [options]";
   print_endline !output_file;
   print_endline !input_file;
   let lines = read_file !input_file in 

@@ -27,6 +27,31 @@ let run1_ast : Arm.prog = [
     ])
 ]
 
+let run2_ast : Arm.prog = [
+Arm.GloblDef("_start");
+Arm.TextDirect([
+{ entry=false; lbl=("add_two_nums"); asm=Arm.Text([
+    (Arm.Add, [Arm.Reg(Arm.X0); Arm.Reg(Arm.X0); Arm.Reg(Arm.X1)]);
+    (Arm.Ret, [])
+])};
+{ entry=true; lbl=("_start"); asm=Arm.Text([
+    (Arm.Adr, [Arm.Reg(Arm.X0); Arm.Imm(Arm.Lbl("n1"))]);
+        (Arm.Ldr, [Arm.Reg(Arm.X0); Arm.Offset(Arm.Ind2(Arm.X0))]);
+        (Arm.Adr, [Arm.Reg(Arm.X1); Arm.Imm(Arm.Lbl("n2"))]);
+        (Arm.Ldr, [Arm.Reg(Arm.X1); Arm.Offset(Arm.Ind2(Arm.X1))]);
+        (Arm.Bl, [Arm.Imm(Arm.Lbl("add_two_nums"))]);
+        (Arm.Ret, [])
+])}
+]);Arm.DataDirect([
+{ entry=false; lbl=("n1"); asm=Arm.Data([
+Arm.Quad(10L)
+])};
+{ entry=false; lbl=("n2"); asm=Arm.Data([
+Arm.Quad(20L)
+])}
+]);
+]
+
 let conditional_logic_ast : Arm.prog = []
 
 let prog_eq (received: Arm.prog) (expected: Arm.prog) : (bool * string * string) = 
@@ -37,6 +62,7 @@ let prog_eq (received: Arm.prog) (expected: Arm.prog) : (bool * string * string)
 (* test name, file, expected AST *)
 let armprograms = [
     ("run1", "armprograms/run1.s", run1_ast);
+    ("run2", "armprograms/run2.s", run2_ast);
     ("conditional_logic", "armprograms/conditional_logic.s", conditional_logic_ast);
 ]
 

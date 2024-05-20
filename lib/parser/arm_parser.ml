@@ -292,7 +292,13 @@ let operands_of_tokens ((ln, insn) : code_line) (args : string list) : Arm.opera
   match args with
   | [] -> []
   | a1::[] -> [operand_of_string (ln, insn) a1]
-  | a1::a2::[] -> [operand_of_string (ln, insn) a1; operand_of_string (ln, insn) a2]
+  | a1::a2::[] -> 
+      if String.contains a2 '[' && String.contains a2 ']' then
+        let fixed_a2 = List.nth (String.split_on_char '[' a2) 1 in 
+        let fixed_a3 = List.nth (String.split_on_char ']' fixed_a2) 0 in
+        [operand_of_string (ln, insn) a1; Arm.Offset(offset_of_string (ln, insn) [fixed_a3])]
+      else
+        [operand_of_string (ln, insn) a1; operand_of_string (ln, insn) a2]
   | a1::a2::a3::[] -> 
       if String.contains a2 '[' && String.contains a3 ']' then
         let fixed_a2 = List.nth (String.split_on_char '[' a2) 1 in 

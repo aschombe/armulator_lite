@@ -6,10 +6,10 @@ let string_of_top_level_directive = function
     | TextDirect _ -> ".text"
     | DataDirect _ -> ".data"
 let ast_string_of_top_level_directive = function 
-    | GloblDef _ -> "Arm.Globl"
-    | ExternSym _ -> "Arm.Extern"
-    | TextDirect _ -> "Arm.Text"
-    | DataDirect _ -> "Arm.Data"
+    | GloblDef _ -> "Arm.GloblDef"
+    | ExternSym _ -> "Arm.ExternSym"
+    | TextDirect _ -> "Arm.TextDirect"
+    | DataDirect _ -> "Arm.DataDirect"
 
 let string_of_data_directive = function
     | Quad _ -> ".quad"
@@ -52,7 +52,7 @@ let string_of_imm = function
     | Lbl l -> l
 let ast_string_of_imm = function
     | Lit i -> "Arm.Lit(" ^ Int64.to_string i ^ "L)"
-    | Lbl l -> "Arm.Lbl(" ^ l ^ ")"
+    | Lbl l -> "Arm.Lbl(\"" ^ l ^ "\")"
 
 let string_of_reg = function
     | X0 -> "x0" | X1 -> "x1" | X2 -> "x2" | X3 -> "x3"
@@ -79,14 +79,14 @@ let string_of_operand = function
 let ast_string_of_operand = function
     | Imm i -> "Arm.Imm(" ^ (ast_string_of_imm i) ^ ")"
     | Reg r -> "Arm.Reg(" ^ (ast_string_of_reg r) ^ ")"
-    | Offset(Ind1 i) -> "Arm.Offset(Arm.Ind1(" ^ (ast_string_of_imm i) ^ "))"
+    | Offset(Ind1 i) -> "Arm.Offset(Arm.Ind1(Arm.Imm(" ^ (ast_string_of_imm i) ^ ")))"
     | Offset(Ind2 r) -> "Arm.Offset(Arm.Ind2(" ^ (ast_string_of_reg r) ^ "))"
-    | Offset(Ind3 (r, i)) -> "Arm.Offset(Arm.Ind3(" ^ (ast_string_of_reg r) ^ ", " ^ (ast_string_of_imm i) ^ "))"
+    | Offset(Ind3 (r, i)) -> "Arm.Offset(Arm.Ind3(" ^ (ast_string_of_reg r) ^ ", Arm.Imm(" ^ (ast_string_of_imm i) ^ ")))"
 
 let string_of_insn (op, ops) =
     (string_of_opcode op) ^ " " ^ (String.concat ", " (List.map string_of_operand ops))
 let ast_string_of_insn (op, ops) =
-    "\tArm.Insn(" ^ (ast_string_of_opcode op) ^ ", [" ^ (String.concat "; " (List.map ast_string_of_operand ops)) ^ "])"
+    "\t(" ^ (ast_string_of_opcode op) ^ ", [" ^ (String.concat "; " (List.map ast_string_of_operand ops)) ^ "])"
 
 let string_of_data = function
     | Quad q -> ".quad " ^ (Int64.to_string q)
@@ -96,14 +96,14 @@ let string_of_data = function
 
 let ast_string_of_data = function
     | Quad q -> "Arm.Quad(" ^ (Int64.to_string q) ^ "L)"
-    | Byte c -> "Arm.Byte(" ^ (Printf.sprintf "0x%02x" c) ^ ")"
+    | Byte c -> "Arm.Byte(" ^ (Printf.sprintf "'%c'" (Char.chr c)) ^ ")"
     | QuadArr qs -> "Arm.QuadArr([" ^ (String.concat "; " (List.map (fun q -> Int64.to_string q) qs)) ^ "])"
-    | ByteArr cs -> "Arm.ByteArr([" ^ (String.concat "; " (List.map (fun co -> Printf.sprintf "0x%02x" co) cs)) ^ "])"
+    | ByteArr cs -> "Arm.ByteArr([" ^ (String.concat "; " (List.map (fun co -> Printf.sprintf "%c" (Char.chr co)) cs)) ^ "])"
 
 let string_of_insn_list insns = String.concat "\n" (List.map string_of_insn insns)
-let ast_string_of_insn_list insns = String.concat "\n" (List.map ast_string_of_insn insns)
+let ast_string_of_insn_list insns = String.concat ";\n" (List.map ast_string_of_insn insns)
 let string_of_data_list data = String.concat "\n" (List.map string_of_data data)
-let ast_string_of_data_list data = String.concat "\n" (List.map ast_string_of_data data)
+let ast_string_of_data_list data = String.concat ";\n" (List.map ast_string_of_data data)
 
 let string_of_block { entry=_; lbl; asm } =
     lbl ^ ":\n"^ (match asm with
@@ -111,7 +111,7 @@ let string_of_block { entry=_; lbl; asm } =
         | Data data -> string_of_data_list data)
 
 let ast_string_of_block { entry=entry; lbl; asm } =
-    "{ entry=" ^ string_of_bool entry ^ "; lbl=Arm.Lbl(\"" ^ lbl ^ "\"); asm=" ^ (match asm with
+    "{ entry=" ^ string_of_bool entry ^ "; lbl=(\"" ^ lbl ^ "\"); asm=" ^ (match asm with
         | Text insns -> "Arm.Text([\n" ^ (ast_string_of_insn_list insns) ^ "\n])"
         | Data data -> "Arm.Data([\n" ^ (ast_string_of_data_list data) ^ "\n])") ^ "}"
 
@@ -122,11 +122,14 @@ let rec string_of_prog prog =
     | ExternSym s :: tl -> ".extern " ^ s ^ "\n" ^ (string_of_prog tl) 
     | TextDirect blocks :: tl -> ".text\n" ^ (String.concat "\n" (List.map string_of_block blocks)) ^ "\n" ^ (string_of_prog tl) 
     | DataDirect blocks :: tl -> ".data\n" ^ (String.concat "\n" (List.map string_of_block blocks)) ^ "\n" ^ (string_of_prog tl) 
-let rec ast_string_of_prog prog =
+let ast_string_of_prog prog =
+  let rec ast_string_of_prog' prog =
     match prog with
     | [] -> ""
-    | GloblDef s :: tl -> "Arm.GloblDef(\"" ^ s ^ "\")\n" ^ (ast_string_of_prog tl) 
-    | ExternSym s :: tl -> "Arm.ExternSym(\"" ^ s ^ "\")\n" ^ (ast_string_of_prog tl) 
-    | TextDirect blocks :: tl -> "Arm.TextDirect([\n" ^ (String.concat ";\n" (List.map ast_string_of_block blocks)) ^ "\n])" ^ (ast_string_of_prog tl) 
-    | DataDirect blocks :: tl -> "Arm.DataBlock([\n" ^ (String.concat ";\n" (List.map ast_string_of_block blocks)) ^ "\n])" ^ (ast_string_of_prog tl)
+    | GloblDef s :: tl -> "Arm.GloblDef(\"" ^ s ^ "\");\n" ^ (ast_string_of_prog' tl) 
+    | ExternSym s :: tl -> "Arm.ExternSym(\"" ^ s ^ "\");\n" ^ (ast_string_of_prog' tl) 
+    | TextDirect blocks :: tl -> "Arm.TextDirect([\n" ^ (String.concat ";\n" (List.map ast_string_of_block blocks)) ^ "\n]);" ^ (ast_string_of_prog' tl) 
+    | DataDirect blocks :: tl -> "Arm.DataDirect([\n" ^ (String.concat ";\n" (List.map ast_string_of_block blocks)) ^ "\n]);" ^ (ast_string_of_prog' tl)
+  in 
+  "[\n" ^ (ast_string_of_prog' prog) ^ "\n]"
 
