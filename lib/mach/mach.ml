@@ -64,7 +64,7 @@ let get_insn (m: mach) (addr: int64) : Arm.insn =
 let mach_error (m: mach) (highlight : string) (msg : string) : 'a =
   if highlight <> "_start" then 
     let insn = get_insn m m.pc in
-    let str_insn = Arm.string_of_insn insn in
+    let str_insn = Arm_stringifier.string_of_insn insn in
     let highlighted_line = Str.global_replace (Str.regexp highlight) ("\x1b[1;91m" ^ highlight ^ "\x1b[0m") str_insn in
     let () = Printf.fprintf Out_channel.stderr "\x1b[1;91mSyntax error \x1b[0mat address \x1b[1;97m0x%x\x1b[0m:" (m.pc |> Int64.to_int) in
     let () = Printf.fprintf Out_channel.stderr " %s '%s'.\n\n" msg highlight in
@@ -213,7 +213,7 @@ let print_sbyte_array (mem: sbyte array) (max_rows: int) : unit =
     match byte with
     | InsFill -> Printf.printf "InsFill, "
     | ExternSym s -> Printf.printf "ExternSym %s, " s
-    | Insn i -> Printf.printf "Insn %s, " (Arm.ast_string_of_insn i)
+    | Insn i -> Printf.printf "Insn %s, " (Arm_stringifier.ast_string_of_insn i)
     | Byte c -> Printf.printf "Byte '%s', " (c |> Char.escaped)
   in 
   Array.iteri (fun i byte -> 

@@ -1,5 +1,11 @@
 (library
   (name mach)
   (modules mach)
-  (libraries arm str))
+  (libraries arm arm_stringifier str))
+
+(library
+  (name emulator)
+  (modules emulator)
+  (libraries arm mach))
+
 

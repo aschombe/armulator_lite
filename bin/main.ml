@@ -49,11 +49,12 @@ let _debug lines =
 
 let main lines =
   let prog = Arm_parser.parse_assembly lines in
-  if !output_file <> "" then write_file !output_file (Arm.string_of_prog prog);
-  let _stringified = Arm.ast_string_of_prog prog in 
+  if !output_file <> "" then write_file !output_file (Arm_stringifier.string_of_prog prog);
+
+  let _stringified = Arm_stringifier.ast_string_of_prog prog in 
   let m = Mach.init prog (Some(!mem_bot |> Int64.of_int)) (Some(!mem_size)) (Some(!exit_val |> Int64.of_int)) (Some(!entry_label)) in
   if !debug then _debug lines; 
-  if !print_ast then print_endline (Arm.ast_string_of_prog prog);
+  if !print_ast then print_endline (Arm_stringifier.ast_string_of_prog prog);
   if !validate then () else Emulator.run m
 
 

@@ -3,4 +3,8 @@
   (modules arm_parser)
   (libraries arm str))
 
+(library
+  (name arm_stringifier)
+  (modules arm_stringifier)
+  (libraries arm str))
 

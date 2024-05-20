@@ -30,8 +30,8 @@ let run1_ast : Arm.prog = [
 let conditional_logic_ast : Arm.prog = []
 
 let prog_eq (received: Arm.prog) (expected: Arm.prog) : (bool * string * string) = 
-    let s_p2 = Arm.string_of_prog expected in 
-    let s_p1 = Arm.string_of_prog received in
+    let s_p2 = Arm_stringifier.string_of_prog expected in 
+    let s_p1 = Arm_stringifier.string_of_prog received in
     (s_p1 = s_p2, s_p1, s_p2)
 
 (* test name, file, expected AST *)
@@ -57,7 +57,7 @@ let run_arm_test (_name, file, expected) : (bool * string * string) =
     try 
         let ast = Arm_parser.parse_assembly lines in 
         prog_eq ast expected
-    with _ -> (false, "parse error", Arm.string_of_prog expected)
+    with _ -> (false, "parse error", Arm_stringifier.string_of_prog expected)
 
 let run_arm_tests () : bool =
     let count = ref 0 in 
