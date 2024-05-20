@@ -36,6 +36,7 @@ let string_of_opcode = function
         | Gt -> "gt"
         | Ge -> "ge")
     | Cmp -> "cmp" | Cbz -> "cbz" | Cbnz -> "cbnz" | Bl -> "bl" | Ret -> "ret"
+    | Svc -> "svc"
 let ast_string_of_opcode = function 
     | Mov -> "Arm.Mov" | Adr -> "Arm.Adr"
     | Ldr -> "Arm.Ldr" | Str -> "Arm.Str"
@@ -46,6 +47,7 @@ let ast_string_of_opcode = function
         match c with
         | Eq -> "Arm.Eq" | Ne -> "Arm.Ne" | Lt -> "Arm.Lt" | Le -> "Arm.Le" | Gt -> "Arm.Gt" | Ge -> "Arm.Ge") ^ ")"
     | Cmp -> "Arm.Cmp" | Cbz -> "Arm.Cbz" | Cbnz -> "Arm.Cbnz" | Bl -> "Arm.Bl" | Ret -> "Arm.Ret"
+    | Svc -> "Arm.Svc"
 
 let string_of_imm = function
     | Lit i -> Int64.to_string i

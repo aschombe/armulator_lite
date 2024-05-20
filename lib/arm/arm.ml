@@ -33,6 +33,7 @@ type opcode =
     | And | Orr | Lsl | Lsr | Asr | Not
     | Br | B of cnd | Cmp | Cbz | Cbnz
     | Bl | Ret 
+    | Svc
 
 (* the above should be self explanatory starting from here *)
 type insn = opcode * operand list 

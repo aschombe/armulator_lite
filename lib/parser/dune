@@ -6,5 +6,10 @@
 (library
   (name arm_stringifier)
   (modules arm_stringifier)
-  (libraries arm str))
+  (libraries arm))
+
+(library
+  (name arm_validator)
+  (modules arm_validator)
+  (libraries arm_stringifier arm str))
 

@@ -241,6 +241,7 @@ let opcode_of_string ((ln, insn) : code_line) (mnemonic : string) : Arm.opcode =
     with _ -> arm_error ln insn cnd_code_mnemoic "Invalid condition code")
   | "cmp" -> Arm.Cmp | "cbz" -> Arm.Cbz  | "cbnz" -> Arm.Cbnz 
   | "bl" -> Arm.Bl  | "ret" -> Arm.Ret 
+  | "svc" -> Arm.Svc
   | _ -> arm_error ln insn mnemonic "Invalid mnemonic"
 
 let register_of_string ((ln, insn) : code_line) (reg : string) : Arm.reg = 
