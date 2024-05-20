@@ -3,6 +3,7 @@
 
 type lbl = string
 type quad = int64
+type word = int32
 type imm =
     | Lit of quad
     | Lbl of lbl
@@ -44,6 +45,8 @@ type data =
     | QuadArr of quad list
     | Byte of int
     | ByteArr of int list
+    | Word of word 
+    | WordArr of word list 
 
 type asm = 
     | Text of insn list

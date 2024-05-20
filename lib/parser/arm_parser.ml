@@ -344,6 +344,16 @@ let token_to_int64 ((ln, line) : code_line) (token : string) : int64 =
   else 
     arm_error ln line token "Invalid i64"
 
+let token_to_int32 ((ln, line) : code_line) (token : string) : int32  = 
+  if is_number token then 
+    let imm = imm_of_string (ln, line) token in 
+    (match imm with 
+    | Arm.Lit(i) -> Int64.to_int32 i 
+    | Arm.Lbl(_) -> arm_error ln line token "Invalid i32"
+    )
+  else 
+    arm_error ln line token "Invalid i64"
+
 let parse_quad ((ln, line) : code_line) (tokens : string list) : Arm.data =
   if List.length tokens = 0 then
     arm_error ln line line "Empty quad!"
@@ -353,6 +363,16 @@ let parse_quad ((ln, line) : code_line) (tokens : string list) : Arm.data =
       Arm.Quad(token_to_int64 (ln, line) imm)
     else
       arm_error ln line imm "Invalid quad"
+
+let parse_word ((ln, line) : code_line) (tokens : string list) : Arm.data =
+  if List.length tokens = 0 then
+    arm_error ln line line "Empty word!"
+  else
+    let imm = List.nth tokens 0 in
+    if is_number imm then
+      Arm.Word(token_to_int32 (ln, line) imm)
+    else
+      arm_error ln line imm "Invalid word"
 
 let parse_quad_arr ((ln, line) : code_line) (tokens : string list) : Arm.data =
   if List.length tokens = 0 then
@@ -366,6 +386,21 @@ let parse_quad_arr ((ln, line) : code_line) (tokens : string list) : Arm.data =
       else
         let quads = List.map (fun x -> token_to_int64 (ln, line) x) tokens in
         Arm.QuadArr(quads)
+    else
+      arm_error ln line imm "Invalid quad array"
+
+let parse_word_arr((ln, line) : code_line) (tokens : string list) : Arm.data =
+  if List.length tokens = 0 then
+    arm_error ln line line "Empty word array!"
+  else
+    let imm = List.nth tokens 0 in
+    if is_number imm then
+      let all_valid = List.for_all (fun x -> is_number x) tokens in
+      if not all_valid then
+        arm_error ln line (List.find (fun x -> not (is_number x)) tokens) "Invalid word"
+      else
+        let words = List.map (fun x -> token_to_int32 (ln, line) x) tokens in
+        Arm.WordArr(words)
     else
       arm_error ln line imm "Invalid quad array"
 
@@ -419,10 +454,16 @@ let parse_ddef ((ln, line) : code_line) (tokens : string list) : Arm.data =
     match mnemonic, ((List.length tokens) - 1) with
     | ".quad", 1 -> parse_quad (ln, line) (List.tl tokens) 
     | ".quad", _ -> parse_quad_arr (ln, line) (List.tl tokens)
+    | ".dword", 1 -> parse_quad (ln, line) (List.tl tokens) 
+    | ".dword", _ -> parse_quad_arr (ln, line) (List.tl tokens)
     | ".byte", 1 -> parse_byte (ln, line) (List.tl tokens) 
     | ".byte", _ -> parse_byte_arr (ln, line) (List.tl tokens) 
     | ".string", _ -> parse_string (ln, line) (List.tl tokens) 
     | ".asciz", _ -> parse_asciz (ln, line) (List.tl tokens) 
+    | ".word", 1 -> parse_word (ln, line) (List.tl tokens) 
+    | ".word", _ -> parse_word_arr (ln, line) (List.tl tokens) 
+    | ".int", 1 -> parse_word (ln, line) (List.tl tokens) 
+    | ".int", _ -> parse_word_arr (ln, line) (List.tl tokens) 
     | _ -> arm_error ln line mnemonic "Invalid data definition"
 
 let parse_data_block (lines : code_line list) : Arm.block =

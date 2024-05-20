@@ -89,8 +89,10 @@ let gen_layout (m: mach) (prog: Arm.prog) : (string * int64) list =
     let data_type_size (d: Arm.data) : int64 = 
       match d with 
       | Arm.Quad _ -> 8L
+      | Arm.Word _ -> 4L 
       | Arm.Byte _ -> 1L
       | Arm.QuadArr arr -> List.length arr |> Int64.of_int |> Int64.mul 8L
+      | Arm.WordArr arr -> List.length arr |> Int64.of_int |> Int64.mul 4L 
       | Arm.ByteArr arr -> List.length arr |> Int64.of_int
     in 
     let block_size = begin match asm with
@@ -131,6 +133,12 @@ let sbytes_of_int64 (i:int64) : sbyte list =
   List.map (fun n -> Byte (shift_right i n |> logand 0xffL |> to_int |> chr))
            [0; 8; 16; 24; 32; 40; 48; 56]
 
+let sbytes_of_int32 (i:int32) : sbyte list =
+  let open Char in 
+  let open Int32 in
+  List.map (fun n -> Byte (shift_right i n |> logand 0xffl |> to_int |> chr))
+           [0; 8; 16; 24]
+
 let int64_of_sbytes (bs:sbyte list) : int64 =
   let open Char in
   let open Int64 in
@@ -140,6 +148,15 @@ let int64_of_sbytes (bs:sbyte list) : int64 =
   in
   List.fold_right f bs 0L
 
+let int32_of_sbytes (bs:sbyte list) : int32 = 
+  let open Char in
+  let open Int32 in
+  let f b i = match b with
+    | Byte c -> logor (shift_left i 8) (c |> code |> of_int)
+    | _ -> 0l
+  in
+  List.fold_right f bs 0l
+
 let build_program (prog: Arm.prog) : sbyte list =
   let build_insn (insn: Arm.insn) : sbyte list = [Insn insn; InsFill; InsFill; InsFill; InsFill; InsFill; InsFill; InsFill] in
   let build_data (data: Arm.data) : sbyte list = 
@@ -148,6 +165,8 @@ let build_program (prog: Arm.prog) : sbyte list =
     | Arm.Byte c -> [Byte (c |> Char.chr)]
     | Arm.QuadArr arr -> List.concat (List.map (fun n -> sbytes_of_int64 n) arr)
     | Arm.ByteArr arr -> List.map (fun c -> Byte (c |> Char.chr)) arr
+    | Arm.Word n -> sbytes_of_int32 n 
+    | Arm.WordArr arr -> List.concat (List.map (fun n -> sbytes_of_int32 n) arr)
   in 
   let build_block (block: Arm.block) : sbyte list =
     match block with
