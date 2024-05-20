@@ -1,7 +1,7 @@
 let step (m: Mach.t) : Mach.t = 
   let insn = Mach.get_insn m m.pc in 
   match insn with
-  | (Arm.Mov, [o1; o2]) -> 
+  | (Arm.Mov, [o1; o2]) ->
     let reg = begin match o1 with
       | Arm.Reg r -> r
       | _ -> Mach.mach_error m (Arm.string_of_operand o1) "Unexpexted register"

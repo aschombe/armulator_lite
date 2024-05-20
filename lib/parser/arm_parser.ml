@@ -80,7 +80,7 @@ let tokenize ((ln, line) : code_line) : (code_line * string list) =
   if is_empty line then
     ((ln, line), [])
   else
-    let line = String.trim line in
+    let line = (String.split_on_char '/' (String.trim line)) |> List.hd in
     let all_str_map = extract_all_strings (ln, line) in
     let line = List.fold_left (fun acc (sym, (s, _)) -> string_replace acc s sym) line all_str_map in
     let parts = String.split_on_char ' ' line in
