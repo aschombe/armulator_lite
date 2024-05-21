@@ -182,14 +182,6 @@ let build_program (prog: Arm.prog) : sbyte list =
   in
   List.concat (List.map build_directive prog)
 
-(* default machine has
-  mem_bot = 0x400000L 
-  mem_size = 0x10000L 
-  mem_top = 0x410000L 
-  nregs = 32 
-  exit_val = 0xfdeadL
-  *)
-
 let init (prog: Arm.prog) (mem_bot: int64 option) (mem_size: int option) (exit_val: int64 option) (entry_label: string option) : mach = 
   let u_mem_bot = match mem_bot with | Some x -> x | None -> 0x400000L in 
   let u_mem_size = match mem_size with | Some x -> x | None -> 0x10000 in 
