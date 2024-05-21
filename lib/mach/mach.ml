@@ -38,15 +38,15 @@ type mach = {
 type t = mach
 
 let reg_index = function
-  | Arm.X0 -> 0 | Arm.X1 -> 1 | Arm.X2 -> 2 | Arm.X3 -> 3 
-  | Arm.X4 -> 4 | Arm.X5 -> 5 | Arm.X6 -> 6 | Arm.X7 -> 7 
-  | Arm.X8 -> 8 | Arm.X9 -> 9 
-  | Arm.X10 -> 10 | Arm.X11 -> 11 | Arm.X12 -> 12 | Arm.X13 -> 13
-  | Arm.X14 -> 14 | Arm.X15 -> 15 | Arm.X16 -> 16 | Arm.X17 -> 17
-  | Arm.X18 -> 18 | Arm.X19 -> 19 | Arm.X20 -> 20 | Arm.X21 -> 21
-  | Arm.X22 -> 22 | Arm.X23 -> 23 | Arm.X24 -> 24 | Arm.X25 -> 25
-  | Arm.X26 -> 26 | Arm.X27 -> 27 | Arm.X28 -> 28 
-  | Arm.SP -> 29 | Arm.XZR -> 31 | Arm.LR -> 30 
+  | Arm.X0 | Arm.W0 -> 0 | Arm.X1 | Arm.W1 -> 1 | Arm.X2 | Arm.W2 -> 2 | Arm.X3 | Arm.W3 -> 3 
+  | Arm.X4 | Arm.W4 -> 4 | Arm.X5 | Arm.W5 -> 5 | Arm.X6 | Arm.W6 -> 6 | Arm.X7 | Arm.W7 -> 7 
+  | Arm.X8 | Arm.W8 -> 8 | Arm.X9 | Arm.W9 -> 9 
+  | Arm.X10 | Arm.W10 -> 10 | Arm.X11 | Arm.W11 -> 11 | Arm.X12 | Arm.W12 -> 12 | Arm.X13 | Arm.W13 -> 13 
+  | Arm.X14 | Arm.W14 -> 14 | Arm.X15 | Arm.W15 -> 15 | Arm.X16 | Arm.W16 -> 16 | Arm.X17 | Arm.W17 -> 17 
+  | Arm.X18 | Arm.W18 -> 18 | Arm.X19 | Arm.W19 -> 19 | Arm.X20 | Arm.W20 -> 20 | Arm.X21 | Arm.W21 -> 21 
+  | Arm.X22 | Arm.W22 -> 22 | Arm.X23 | Arm.W23 -> 23 | Arm.X24 | Arm.W24 -> 24 | Arm.X25 | Arm.W25 -> 25 
+  | Arm.X26 | Arm.W26 -> 26 | Arm.X27 | Arm.W27 -> 27 | Arm.X28 | Arm.W28 -> 28 | Arm.SP | Arm.W29 -> 29
+  | Arm.XZR -> 31 | Arm.LR | Arm.W30 -> 30 
 
 let map_addr (m: mach) (addr: int64) : int = 
   let addr = Int64.add addr m.info.mem_bot in

@@ -72,6 +72,17 @@ let string_of_reg = function
     | X25 -> "x25" | X26 -> "x26" | X27 -> "x27"
     | X28 -> "x28"
     | SP -> "sp" | LR -> "lr" | XZR -> "xzr"
+    | W0 -> "w0" | W1 -> "w1" | W2 -> "w2" | W3 -> "w3" 
+    | W4 -> "w4" | W5 -> "w5" | W6 -> "w6" | W7 -> "w7" 
+    | W8 -> "w8" | W9 -> "w9"
+    | W10 -> "w10" | W11 -> "w11" | W12 -> "w12" 
+    | W13 -> "w13" | W14 -> "w14" | W15 -> "w15" 
+    | W16 -> "w16" | W17 -> "w17" | W18 -> "w18" 
+    | W19 -> "w19" | W20 -> "w20" | W21 -> "w21" 
+    | W22 -> "w22" | W23 -> "w23" | W24 -> "w24" 
+    | W25 -> "w25" | W26 -> "w26" | W27 -> "w27"
+    | W28 -> "w28" | W29 -> "w29" | W30 -> "w30"
+
 let ast_string_of_reg (r : reg) : string =
     let uppercase_reg = String.uppercase_ascii (string_of_reg r) in 
     "Arm." ^ uppercase_reg

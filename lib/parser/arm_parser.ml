@@ -256,10 +256,21 @@ let register_of_string ((ln, insn) : code_line) (reg : string) : Arm.reg =
   | "x26" -> Arm.X26 | "x27" -> Arm.X27 | "x28" -> Arm.X28 | "x29" -> Arm.SP 
   | "x30" -> Arm.LR | "x31" -> Arm.XZR 
   | "sp" -> Arm.SP | "lr" -> Arm.LR | "xzr" -> Arm.XZR
-  | _ -> arm_error ln insn reg "Invalid register"
+  | "w0" -> Arm.W0 | "w1" -> Arm.W1 | "w2" -> Arm.W2 | "w3" -> Arm.W3 
+  | "w4" -> Arm.W4 | "w5" -> Arm.W5 | "w6" -> Arm.W6 | "w7" -> Arm.W7 
+  | "w8" -> Arm.W8 | "w9" -> Arm.W9 
+  | "w10" -> Arm.W10 | "w11" -> Arm.W11 | "w12" -> Arm.W12 | "w13" -> Arm.W13 
+  | "w14" -> Arm.W14 | "w15" -> Arm.W15 | "w16" -> Arm.W16 | "w17" -> Arm.W17
+  | "w18" -> Arm.W18 | "w19" -> Arm.W19 | "w20" -> Arm.W20 | "w21" -> Arm.W21 
+  | "w22" -> Arm.W22 | "w23" -> Arm.W23 | "w24" -> Arm.W24 | "w25" -> Arm.W25 
+  | "w26" -> Arm.W26 | "w27" -> Arm.W27 | "w28" -> Arm.W28 | "w29" -> Arm.W29 
+  | "w30" -> Arm.W30 
+  | _ -> arm_error ln insn reg "Invalid lower register"
+
 let is_not_register (r : string) : bool = 
   try 
-    let _ = register_of_string (0, "") r in false 
+    let _ = register_of_string (0, "") r in 
+    false
   with _ -> true
 
 let imm_of_string ((ln, insn) : code_line) (imm : string) : Arm.imm = 
