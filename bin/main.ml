@@ -53,6 +53,8 @@ let main lines =
 
   let _stringified = Arm_stringifier.ast_string_of_prog prog in 
   let m = Mach.init prog (Some(!mem_bot |> Int64.of_int)) (Some(!mem_size)) (Some(!exit_val |> Int64.of_int)) (Some(!entry_label)) in
+  Mach.print_machine_info m;
+  Mach.print_machine_state m;
   if !debug then _debug lines; 
   if !print_ast then print_endline (Arm_stringifier.ast_string_of_prog prog);
   if !validate then () else Emulator.run m

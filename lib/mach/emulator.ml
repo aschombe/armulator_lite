@@ -42,7 +42,8 @@ let mem_store (m: Mach.t) (v: Arm.data) (o: Arm.operand) (rgs: int64 array) (mem
   data_into_memory str_addr v mem
 
 let step (m: Mach.t) : Mach.t = 
-  let insn = Mach.get_insn m m.pc in 
+  let insn = Mach.get_insn m m.pc in
+  print_endline (Arm_stringifier.ast_string_of_insn insn);
   match insn with
   | (Arm.Mov, [o1; o2]) ->
     let reg = begin match o1 with
@@ -57,13 +58,55 @@ let step (m: Mach.t) : Mach.t =
     end in 
     m.regs.(Mach.reg_index reg) <- v;
     m
+  | (Arm.Adr, [o1; o2]) -> 
+    let reg = begin match o1 with 
+      | Arm.Reg r -> r 
+      | _ -> Mach.mach_error m (Arm_stringifier.string_of_operand o1) "Unexpexted register"
+    end in 
+    let label_name = begin match o2 with 
+      | Arm.Imm(Lbl l) -> l 
+      | _ -> Mach.mach_error m (Arm_stringifier.string_of_operand o2) "Unexpexted label"
+    end in 
+    let label_val = Mach.lookup_label m.info.layout label_name in 
+    m.regs.(Mach.reg_index reg) <- label_val;
+    m
+  | (Arm.Add, [o1; o2; o3]) -> 
+    let reg = begin match o1 with 
+      | Arm.Reg r -> r 
+      | _ -> Mach.mach_error m (Arm_stringifier.string_of_operand o1) "Unexpexted register"
+    end in 
+    let addend1 = begin match o2 with
+      | Arm.Imm (Lit i) -> i
+      | Arm.Imm (Lbl l) -> Mach.lookup_label m.info.layout l
+      | Arm.Reg r -> m.regs.(Mach.reg_index r) 
+      | _ -> Mach.mach_error m (Arm_stringifier.string_of_operand o2) "Unexpected immediate"
+    end in 
+    let addend2 = begin match o3 with
+      | Arm.Imm (Lit i) -> i
+      | Arm.Imm (Lbl l) -> Mach.lookup_label m.info.layout l
+      | Arm.Reg r -> m.regs.(Mach.reg_index r) 
+      | _ -> Mach.mach_error m (Arm_stringifier.string_of_operand o3) "Unexpected immediate"
+    end in 
+    m.regs.(Mach.reg_index reg) <- Int64.add addend1 addend2;
+    m
+  | (Arm.Bl, [o1]) -> 
+    let label_name = begin match o1 with 
+      | Arm.Imm(Lbl l) -> l 
+      | _ -> Mach.mach_error m (Arm_stringifier.string_of_operand o1) "Unexpexted label"
+    end in 
+    let label_val = Mach.lookup_label m.info.layout label_name in 
+    m.regs.(Mach.reg_index Arm.LR) <- m.pc;
+    m.pc <- Int64.sub label_val 8L; (* subtract 8 because step will increment PC *)
+    m
+  | (Arm.Ret, []) -> 
+    m.pc <- m.regs.(Mach.reg_index Arm.LR);
+    m
   | _ -> Mach.mach_error m (Arm_stringifier.string_of_insn insn) "Unexpected instruction"
 
 let run (m: Mach.t) : unit = 
-  let rec loop (m: Mach.t) : unit = 
+  let rec loop (m: Mach.t) : unit =
     let m' = step m in 
-    m'.pc <- (Int64.add m'.pc 8L);
-    if m'.pc = m'.info.exit_val || m'.regs.(Mach.reg_index Arm.SP) = m'.info.exit_val then () else
-    loop m'
-  in loop m 
+    if Int64.equal m'.pc m'.info.exit_val || Int64.equal m'.regs.(Mach.reg_index Arm.SP) m'.info.exit_val then (Mach.print_machine_state m; print_endline "DONE") else
+      (m'.pc <- (Int64.add m'.pc 8L); loop m')
+  in print_endline "__emulator_start"; loop m 
 

@@ -6,6 +6,7 @@ let insn_size = 8L
 
 type sbyte = 
 | InsFill 
+| GlobalDef of string
 | ExternSym of string
 | Insn of Arm.insn 
 | Byte of char
@@ -159,6 +160,7 @@ let int32_of_sbytes (bs:sbyte list) : int32 =
 
 let build_program (prog: Arm.prog) : sbyte list =
   let build_insn (insn: Arm.insn) : sbyte list = [Insn insn; InsFill; InsFill; InsFill; InsFill; InsFill; InsFill; InsFill] in
+  let build_global_def (label: Arm.lbl) : sbyte list = [GlobalDef label; InsFill; InsFill; InsFill; InsFill; InsFill; InsFill; InsFill] in
   let build_data (data: Arm.data) : sbyte list = 
     match data with
     | Arm.Quad n -> sbytes_of_int64 n
@@ -175,7 +177,7 @@ let build_program (prog: Arm.prog) : sbyte list =
   in 
   let build_directive (dir: Arm.tld) : sbyte list =
     match dir with
-    | Arm.GloblDef _ -> []
+    | Arm.GloblDef l -> build_global_def l
     | Arm.ExternSym s -> [ExternSym s]
     | Arm.TextDirect blocks
     | Arm.DataDirect blocks -> List.concat (List.map build_block blocks)
@@ -208,14 +210,39 @@ let init (prog: Arm.prog) (mem_bot: int64 option) (mem_size: int option) (exit_v
     | [] -> mach_error tmp_mach u_entry_label "Entry point not defined"
     | (l, offset)::t -> if l = u_entry_label then offset else get_entry_addr t
   in
-  let layout = gen_layout tmp_mach prog in 
+  let layout = gen_layout tmp_mach prog in
+  regs.(reg_index Arm.LR) <- u_exit_val;
   regs.(reg_index Arm.SP) <- u_mem_top;
-  { info = { minfo with layout = layout; entry = (u_entry_label, get_entry_addr layout) };
+  let m = { info = { minfo with layout = layout; entry = (u_entry_label, get_entry_addr layout) };
     regs = regs;
-    pc = (snd minfo.entry);
+    pc = (get_entry_addr layout);
     mem = mem;
     flags = { n = false; z = false; c = false; v = false; }
-  }
+  } in 
+  let sub_pc = Int64.sub m.pc m.info.mem_bot in 
+  m.pc <- sub_pc;
+  m
+
+let print_machine_info (m: mach) : unit =
+  let layout_str = List.map (fun (label, addr) -> "\t" ^ label ^ " @ " ^ (Int64.to_string addr)) m.info.layout |> String.concat "\n" in
+  print_endline ("mem_bot = " ^ (Int64.to_string m.info.mem_bot));
+  print_endline ("mem_size = " ^ (Int64.to_string m.info.mem_size));
+  print_endline ("mem_top = " ^ (Int64.to_string m.info.mem_top));
+  print_endline ("nregs = " ^ (Int.to_string m.info.nregs));
+  print_endline ("exit_val = " ^ (Int64.to_string m.info.exit_val));
+  print_endline ("entry = {" ^ (fst m.info.entry) ^ " @ " ^ (Int64.to_string (snd m.info.entry)) ^ "}");
+  print_endline ("layout = [\n" ^ layout_str ^ "\n]")
+
+let print_machine_state (m: mach) : unit = 
+  let regs_string = Array.map Int64.to_string m.regs |> Array.to_list |> String.concat "; " in
+  let n_flag = "n -> " ^ (Bool.to_string m.flags.n) in 
+  let z_flag = "n -> " ^ (Bool.to_string m.flags.z) in 
+  let c_flag = "n -> " ^ (Bool.to_string m.flags.c) in 
+  let v_flag = "n -> " ^ (Bool.to_string m.flags.v) in 
+  let flags_string = n_flag ^ "; " ^ z_flag ^ "; " ^ c_flag ^ "; " ^ v_flag in
+  print_endline ("regs = [" ^ regs_string ^ "]");
+  print_endline ("pc = " ^ (Int64.to_string m.pc));
+  print_endline ("flags = {" ^ flags_string ^ "}")
 
 let print_sbyte_array (mem: sbyte array) (max_rows: int) : unit =
   let max_rows = max_rows * 8 in
@@ -223,6 +250,7 @@ let print_sbyte_array (mem: sbyte array) (max_rows: int) : unit =
   let print_byte byte = 
     match byte with
     | InsFill -> Printf.printf "InsFill, "
+    | GlobalDef l -> Printf.printf "GlobalDef %s" l
     | ExternSym s -> Printf.printf "ExternSym %s, " s
     | Insn i -> Printf.printf "Insn %s, " (Arm_stringifier.ast_string_of_insn i)
     | Byte c -> Printf.printf "Byte '%s', " (c |> Char.escaped)

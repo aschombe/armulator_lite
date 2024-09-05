@@ -30,3 +30,4 @@ _opam/
 
 bin/main.exe
 arml
+node_modules/

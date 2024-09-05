@@ -10,7 +10,9 @@ _start:
 	ldr x0, [x0] 
 	adr x1, n2 
 	ldr x1, [x1] 
+	mov x9, lr
 	bl add_two_nums
+	mov lr, x9
     ret
 
 .data
