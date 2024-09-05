@@ -67,13 +67,13 @@ let mach_error (m: mach) (highlight : string) (msg : string) : 'a =
     let insn = get_insn m m.pc in
     let str_insn = Arm_stringifier.string_of_insn insn in
     let highlighted_line = Str.global_replace (Str.regexp highlight) ("\x1b[1;91m" ^ highlight ^ "\x1b[0m") str_insn in
-    let () = Printf.fprintf Out_channel.stderr "\x1b[1;91mSyntax error \x1b[0mat address \x1b[1;97m0x%x\x1b[0m:" (m.pc |> Int64.to_int) in
+    let () = Printf.fprintf Out_channel.stderr "\x1b[1;91mMachine error \x1b[0mat address \x1b[1;97m0x%x\x1b[0m:" (m.pc |> Int64.to_int) in
     let () = Printf.fprintf Out_channel.stderr " %s '%s'.\n\n" msg highlight in
     let () = Printf.fprintf Out_channel.stderr "\t%s\n\n" highlighted_line in
     raise (Segmentation_fault msg)
   else
     let highlighted_line = Str.global_replace (Str.regexp highlight) ("\x1b[1;91m" ^ highlight ^ "\x1b[0m") "No label '_start' defined!" in
-    let () = Printf.fprintf Out_channel.stderr "\x1b[1;91mSyntax error \x1b[0mat address\x1b[1;97m0x%x\x1b[0m:" (m.pc |> Int64.to_int) in
+    let () = Printf.fprintf Out_channel.stderr "\x1b[1;91mMachine error \x1b[0mat address\x1b[1;97m0x%x\x1b[0m:" (m.pc |> Int64.to_int) in
     let () = Printf.fprintf Out_channel.stderr " %s '%s'.\n\n" msg highlight in
     let () = Printf.fprintf Out_channel.stderr "\t%s\n\n" highlighted_line in
     raise (No_entrypoint)
@@ -184,6 +184,26 @@ let build_program (prog: Arm.prog) : sbyte list =
   in
   List.concat (List.map build_directive prog)
 
+let print_sbyte_array (mem: sbyte array) (max_rows: int) : unit =
+  let max_rows = max_rows * 8 in
+  let print_byte byte = 
+    match byte with
+    | InsFill -> Printf.printf "InsFill, "
+    | GlobalDef l -> Printf.printf "GlobalDef %s," l
+    | ExternSym s -> Printf.printf "ExternSym %s, " s
+    | Insn i -> Printf.printf "Insn %s, " (Arm_stringifier.ast_string_of_insn i)
+    | Byte c -> Printf.printf "Byte '%s', " (c |> Char.escaped)
+  in 
+  Array.iteri (fun i byte -> 
+    if i > max_rows then Printf.printf ""
+    else
+      begin
+        if i mod 8 = 0 then Printf.printf "\n+%04d: " i;
+        print_byte byte;
+        Printf.printf " "
+      end
+  ) mem
+
 let init (prog: Arm.prog) (mem_bot: int64 option) (mem_size: int option) (exit_val: int64 option) (entry_label: string option) : mach = 
   let u_mem_bot = match mem_bot with | Some x -> x | None -> 0x400000L in 
   let u_mem_size = match mem_size with | Some x -> x | None -> 0x10000 in 
@@ -203,6 +223,7 @@ let init (prog: Arm.prog) (mem_bot: int64 option) (mem_size: int option) (exit_v
   let program_bytes = build_program prog |> Array.of_list in
   let mem = Array.make u_mem_size InsFill in 
   Array.blit program_bytes 0 mem 0 (Array.length program_bytes);
+  print_sbyte_array mem 15;
   let regs = Array.make nregs 0L in
   let tmp_mach = { info = minfo; regs; pc = 0L; mem; flags = { n = false; z = false; c = false; v = false; } } in 
   let rec get_entry_addr (map: (string * int64) list) : int64 =
@@ -243,27 +264,6 @@ let print_machine_state (m: mach) : unit =
   print_endline ("regs = [" ^ regs_string ^ "]");
   print_endline ("pc = " ^ (Int64.to_string m.pc));
   print_endline ("flags = {" ^ flags_string ^ "}")
-
-let print_sbyte_array (mem: sbyte array) (max_rows: int) : unit =
-  let max_rows = max_rows * 8 in
-  print_char '[';
-  let print_byte byte = 
-    match byte with
-    | InsFill -> Printf.printf "InsFill, "
-    | GlobalDef l -> Printf.printf "GlobalDef %s" l
-    | ExternSym s -> Printf.printf "ExternSym %s, " s
-    | Insn i -> Printf.printf "Insn %s, " (Arm_stringifier.ast_string_of_insn i)
-    | Byte c -> Printf.printf "Byte '%s', " (c |> Char.escaped)
-  in 
-  Array.iteri (fun i byte -> 
-    if i > max_rows then Printf.printf ""
-    else
-      begin
-        if i mod 8 = 0 then Printf.printf "]\n[";
-        print_byte byte;
-        Printf.printf " "
-      end
-  ) mem; print_char ']'
 
 (* default machine has
  mem_bot = 0x400000L

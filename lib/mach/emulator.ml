@@ -43,7 +43,8 @@ let mem_store (m: Mach.t) (v: Arm.data) (o: Arm.operand) (rgs: int64 array) (mem
 
 let step (m: Mach.t) : Mach.t = 
   let insn = Mach.get_insn m m.pc in
-  print_endline (Arm_stringifier.ast_string_of_insn insn);
+  print_endline (Arm_stringifier.string_of_insn insn);
+  (*Mach.print_machine_state m;*)
   match insn with
   | (Arm.Mov, [o1; o2]) ->
     let reg = begin match o1 with
@@ -68,7 +69,19 @@ let step (m: Mach.t) : Mach.t =
       | _ -> Mach.mach_error m (Arm_stringifier.string_of_operand o2) "Unexpexted label"
     end in 
     let label_val = Mach.lookup_label m.info.layout label_name in 
-    m.regs.(Mach.reg_index reg) <- label_val;
+    m.regs.(Mach.reg_index reg) <- Int64.sub (Int64.sub label_val m.info.mem_bot) 8L;
+    m
+  | (Arm.Ldr, [o1; o2]) ->
+    let reg = begin match o1 with
+      | Arm.Reg r -> r
+      | _ -> Mach.mach_error m (Arm_stringifier.string_of_operand o1) "Unexpexted register"
+    end in
+    let load_addr = begin match o2 with 
+      | Arm.Offset(Arm.Ind2(r)) -> m.regs.(Mach.reg_index r)
+      | _ -> 0L
+    end in
+    let data = read_bytes load_addr 8L m.mem |> Mach.int64_of_sbytes in 
+    m.regs.(Mach.reg_index reg) <- data;
     m
   | (Arm.Add, [o1; o2; o3]) -> 
     let reg = begin match o1 with 
@@ -96,7 +109,7 @@ let step (m: Mach.t) : Mach.t =
     end in 
     let label_val = Mach.lookup_label m.info.layout label_name in 
     m.regs.(Mach.reg_index Arm.LR) <- m.pc;
-    m.pc <- Int64.sub label_val 8L; (* subtract 8 because step will increment PC *)
+    m.pc <- Int64.sub (Int64.sub label_val m.info.mem_bot) 8L; (* subtract 8 because step will increment PC *)
     m
   | (Arm.Ret, []) -> 
     m.pc <- m.regs.(Mach.reg_index Arm.LR);

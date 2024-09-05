@@ -1,4 +1,4 @@
-open Arm 
+open Arm
 
 let string_of_top_level_directive = function
     | GloblDef _ -> ".globl"
@@ -103,7 +103,7 @@ let ast_string_of_operand = function
 let string_of_insn (op, ops) =
     (string_of_opcode op) ^ " " ^ (String.concat ", " (List.map string_of_operand ops))
 let ast_string_of_insn (op, ops) =
-    "\t(" ^ (ast_string_of_opcode op) ^ ", [" ^ (String.concat "; " (List.map ast_string_of_operand ops)) ^ "])"
+    "(" ^ (ast_string_of_opcode op) ^ ", [" ^ (String.concat "; " (List.map ast_string_of_operand ops)) ^ "])"
 
 let string_of_data = function
     | Quad q -> ".quad " ^ (Int64.to_string q)
@@ -153,4 +153,3 @@ let ast_string_of_prog prog =
     | DataDirect blocks :: tl -> "Arm.DataDirect([\n" ^ (String.concat ";\n" (List.map ast_string_of_block blocks)) ^ "\n]);" ^ (ast_string_of_prog' tl)
   in 
   "[\n" ^ (ast_string_of_prog' prog) ^ "\n]"
-
