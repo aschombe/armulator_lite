@@ -43,7 +43,7 @@ let mem_store (m: Mach.t) (v: Arm.data) (o: Arm.operand) (rgs: int64 array) (mem
 
 let step (m: Mach.t) : Mach.t = 
   let insn = Mach.get_insn m m.pc in
-  print_endline (Arm_stringifier.string_of_insn insn);
+  print_endline (Printf.sprintf "+%04d: %s" (Int64.to_int m.pc) (Arm_stringifier.string_of_insn insn));
   (*Mach.print_machine_state m;*)
   match insn with
   | (Arm.Mov, [o1; o2]) ->

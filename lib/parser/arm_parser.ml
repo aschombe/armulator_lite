@@ -442,6 +442,17 @@ let parse_byte_arr ((ln, line) : code_line) (tokens : string list) : Arm.data =
     let bytes = parse_byte_list (ln, line) tokens in 
     Arm.ByteArr(bytes)
 
+let parse_skip ((ln, line) : code_line) (tokens : string list) : Arm.data =
+  if List.length tokens = 0 then 
+    arm_error ln line line "Invalid skip!"
+  else 
+    let imm = List.nth tokens 0 in 
+    if is_number imm then 
+      let skips = List.init (token_to_int64 (ln, line) imm |> Int64.to_int) (fun _ -> 0) in 
+      Arm.ByteArr(skips)
+    else 
+      arm_error ln line imm "Invalid number"
+
 let parse_string ((ln, line) : code_line) (tokens : string list) : Arm.data = 
   if List.length tokens = 0 then
     arm_error ln line line "Empty string!"
@@ -475,6 +486,7 @@ let parse_ddef ((ln, line) : code_line) (tokens : string list) : Arm.data =
     | ".word", _ -> parse_word_arr (ln, line) (List.tl tokens) 
     | ".int", 1 -> parse_word (ln, line) (List.tl tokens) 
     | ".int", _ -> parse_word_arr (ln, line) (List.tl tokens) 
+    | ".skip", 1 -> parse_byte (ln, line) (List.tl tokens)
     | _ -> arm_error ln line mnemonic "Invalid data definition"
 
 let parse_data_block (lines : code_line list) : Arm.block =
