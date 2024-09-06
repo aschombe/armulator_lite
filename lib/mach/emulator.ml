@@ -77,8 +77,13 @@ let step (m: Mach.t) : Mach.t =
       | _ -> Mach.mach_error m (Arm_stringifier.string_of_operand o1) "Unexpexted register"
     end in
     let load_addr = begin match o2 with 
+      | Arm.Offset(Arm.Ind1(im)) -> begin match im with 
+        | Lit n -> n 
+        | Lbl l -> Mach.lookup_label m.info.layout l
+        end
       | Arm.Offset(Arm.Ind2(r)) -> m.regs.(Mach.reg_index r)
-      | _ -> 0L
+      | Arm.Offset(Arm.Ind3(r, Lit offs)) -> Int64.add m.regs.(Mach.reg_index r) (offs)
+      | _ -> Mach.mach_error m (Arm_stringifier.string_of_operand o2) "Invalid offset"
     end in
     let data = read_bytes load_addr 8L m.mem |> Mach.int64_of_sbytes in 
     m.regs.(Mach.reg_index reg) <- data;
