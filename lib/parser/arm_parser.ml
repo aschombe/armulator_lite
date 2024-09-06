@@ -486,7 +486,7 @@ let parse_ddef ((ln, line) : code_line) (tokens : string list) : Arm.data =
     | ".word", _ -> parse_word_arr (ln, line) (List.tl tokens) 
     | ".int", 1 -> parse_word (ln, line) (List.tl tokens) 
     | ".int", _ -> parse_word_arr (ln, line) (List.tl tokens) 
-    | ".skip", 1 -> parse_byte (ln, line) (List.tl tokens)
+    | ".skip", 1 -> parse_skip (ln, line) (List.tl tokens)
     | _ -> arm_error ln line mnemonic "Invalid data definition"
 
 let parse_data_block (lines : code_line list) : Arm.block =
