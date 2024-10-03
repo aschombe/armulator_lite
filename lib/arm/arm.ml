@@ -35,7 +35,9 @@ type opcode =
     | Mov | Adr
     | Ldr | Str (* need to add support for ldrb/strb eventually, we can just add new opcodes later *)
     | Add | Sub | Mul 
+    | Adds | Subs | Muls 
     | And | Orr | Lsl | Lsr | Asr | Not
+    | Ands | Orrs | Lsls | Lsrs | Nots 
     | Br | B of cnd | Cmp | Cbz | Cbnz
     | Bl | Ret 
     | Svc

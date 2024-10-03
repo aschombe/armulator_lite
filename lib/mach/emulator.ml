@@ -32,7 +32,7 @@ let data_into_reg (r: Arm.reg) (value: Arm.data) (rgs: int64 array) : unit =
   match value with
   | Arm.Quad i -> rgs.(Mach.reg_index r) <- i 
   | Arm.Word w -> rgs.(Mach.reg_index r) <- Int64.of_int32 w 
-  | Arm.Byte b -> rgs.(Mach.reg_index r) <- Int64.of_int32 (Int32.of_int (b)) 
+  | Arm.Byte b -> rgs.(Mach.reg_index r) <- Int64.of_int b
   | _ -> failwith "Unexpected data type"
 
 let reg_store (v: Arm.data) (r: Arm.reg) (rgs: int64 array) : unit = data_into_reg r v rgs
