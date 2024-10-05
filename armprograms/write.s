@@ -10,9 +10,10 @@ _start:
     svc 0
 
     adr x0, format 
-    mov x1, 10
-    mov x2, 20
-    mov x3, 30
+    adr x1, vec
+    mov x2, 10
+    mov x3, 20
+    mov x4, 30
     bl printf
 
     mov x0, 0
@@ -21,4 +22,5 @@ _start:
 
 .data
 str: .asciz "Hello world!\n"
-format: .asciz "%d, %d, %d\n"
+format: .asciz "%s: %d, %d, %d\n"
+vec: .asciz "vector is"

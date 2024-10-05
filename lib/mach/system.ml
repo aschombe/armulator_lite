@@ -32,20 +32,39 @@ let execute_syscall (m: Mach.t) : Mach.t =
   | SysWrite -> let result = syscall_write m arg0 arg1 arg2 in m.regs.(Mach.reg_index X0) <- result; m
   | SysExit -> let result = syscall_exit m arg0 in m.regs.(Mach.reg_index X0) <- result; m
 
-let rec __clib_printf (fmt: char list) (args: int64 list) : unit =
+let rec __clib_printf (m: Mach.t) (fmt: char list) (args: int64 list) : unit =
   match fmt, args with
   | [], [] -> () 
   | _, [] -> Printf.printf "(%s)" (String.of_seq (List.to_seq fmt)) 
   | ('%'::'d'::f), (arg::rest_args) ->
     Printf.printf ("%d") (arg |> Int64.to_int);
-    __clib_printf f rest_args
+    __clib_printf m f rest_args
+  | ('%'::'l'::'d'::f), (arg::rest_args) ->
+    Printf.printf ("%ld") (arg |> Int64.to_int32);
+    __clib_printf m f rest_args
+  | ('%'::'l'::'u'::f), (arg::rest_args) ->
+    Printf.printf ("%lu") (arg |> Int64.to_int32);
+    __clib_printf m f rest_args
+  | ('%'::'l'::'l'::'d'::f), (arg::rest_args) ->
+    Printf.printf ("%lld") (arg |> Int64.to_int);
+    __clib_printf m f rest_args
+  | ('%'::'l'::'l'::'u'::f), (arg::rest_args) ->
+    Printf.printf ("%llu") (arg |> Int64.to_int);
+    __clib_printf m f rest_args
+  | ('%'::'c'::f), (arg::rest_args) ->
+    Printf.printf ("%c") (arg |> Int64.to_int |> Char.chr);
+    __clib_printf m f rest_args
+  | ('%'::'s'::f), (arg::rest_args) ->
+    let str = Memory.read_to_null_terminator arg m.mem |> Mach.string_of_sbytes in
+    Printf.printf "%s" str;
+    __clib_printf m f rest_args
   | (c::f), _ -> 
     Printf.printf "%c" c;
-    __clib_printf f args
+    __clib_printf m f args
   | _ -> ()
   
-let clib_printf fmt_str args =
-  __clib_printf (String.to_seq fmt_str |> List.of_seq) args
+let clib_printf (m: Mach.t) (fmt_str: string) (args: int64 list) =
+  __clib_printf m (String.to_seq fmt_str |> List.of_seq) args
 
 let execute_extern_function (m: Mach.t) (lbl: string) : Mach.t =
   let arg0 = m.regs.(Mach.reg_index X0) in 
@@ -57,7 +76,7 @@ let execute_extern_function (m: Mach.t) (lbl: string) : Mach.t =
   match lbl with 
   | "printf" -> 
     let str = Memory.read_to_null_terminator arg0 m.mem |> Mach.string_of_sbytes in 
-    clib_printf str [arg1; arg2; arg3; arg4; arg5];
+    clib_printf m str [arg1; arg2; arg3; arg4; arg5];
     m
   | "scanf" -> m 
   | _ -> Mach.mach_error m (lbl) "Unimplemented external function"
