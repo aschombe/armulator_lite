@@ -34,7 +34,7 @@ type cnd =
 
 type opcode = 
     | Mov | Adr
-    | Ldr | Str (* need to add support for ldrb/strb eventually, we can just add new opcodes later *)
+    | Ldr | Ldrb | Str | Strb (* need to add support for ldrb/strb eventually, we can just add new opcodes later *)
     | Add | Sub | Mul 
     | Adds | Subs | Muls 
     | And | Orr | Lsl | Lsr | Asr | Not

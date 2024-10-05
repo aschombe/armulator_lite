@@ -28,7 +28,7 @@ let ast_string_of_data_directive = function
 
 let string_of_opcode = function
     | Mov -> "mov" | Adr -> "adr"
-    | Ldr -> "ldr" | Str -> "str"
+    | Ldr -> "ldr" | Ldrb -> "ldrb" | Str -> "str" | Strb -> "strb"
     | Add -> "add" | Sub -> "sub" | Mul -> "mul"
     | Adds -> "adds" | Subs -> "subs" | Muls -> "muls"
     | And -> "and" | Orr -> "orr" | Lsl -> "lsl" | Lsr -> "lsr" | Asr -> "asr" | Not -> "not"
@@ -46,7 +46,7 @@ let string_of_opcode = function
     | Svc -> "svc"
 let ast_string_of_opcode = function 
     | Mov -> "Arm.Mov" | Adr -> "Arm.Adr"
-    | Ldr -> "Arm.Ldr" | Str -> "Arm.Str"
+    | Ldr -> "Arm.Ldr" | Ldrb -> "Arm.Ldrb" | Str -> "Arm.Str" | Strb -> "Arm.Strb"
     | Add -> "Arm.Add" | Sub -> "Arm.Sub" | Mul -> "Arm.Mul"
     | Adds -> "Arm.Adds" | Subs -> "Arm.Subs" | Muls -> "Arm.Muls"
     | And -> "Arm.And" | Orr -> "Arm.Orr" | Lsl -> "Arm.Lsl" | Lsr -> "Arm.Lsr" | Asr -> "Arm.Asr" | Not -> "Arm.Not"

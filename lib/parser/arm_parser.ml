@@ -223,7 +223,7 @@ let opcode_of_string ((ln, insn) : code_line) (mnemonic : string) : Arm.opcode =
   let partial = List.nth pieces 0 in
   match partial with
   | "mov" -> Arm.Mov | "adr" -> Arm.Adr 
-  | "ldr" -> Arm.Ldr | "str" -> Arm.Str 
+  | "ldr" -> Arm.Ldr | "ldrb" -> Arm.Ldrb | "str" -> Arm.Str | "strb" -> Arm.Strb 
   | "add" -> Arm.Add| "sub" -> Arm.Sub  | "mul" -> Arm.Mul 
   | "adds" -> Arm.Adds | "subs" -> Arm.Subs | "muls" -> Arm.Muls
   | "and" -> Arm.And | "orr" -> Arm.Orr  | "lsl" -> Arm.Lsl | "lsr" -> Arm.Lsr  | "asr" -> Arm.Asr | "not" -> Arm.Not
