@@ -11,7 +11,12 @@
 (library
   (name system)
   (modules system)
-  (libraries arm mach decoder))
+  (libraries arm mach decoder memory))
+
+(library
+  (name memory)
+  (modules memory)
+  (libraries mach))
 
 (library
   (name decoder)
@@ -21,6 +26,6 @@
 (library
   (name emulator)
   (modules emulator)
-  (libraries arm mach decoder int64_overflow))
+  (libraries arm mach decoder int64_overflow system memory))
 
 

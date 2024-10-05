@@ -7,18 +7,23 @@ let number_to_syscall = function
 | 93L -> SysExit
 | n -> raise (Invalid_syscall n)
 
-let syscall_read (m: Mach.t) (fd: int64) (buf: int64) (count: int64) : int64 =
+let syscall_read (_m: Mach.t) (_fd: int64) (_buf: int64) (_count: int64) : int64 =
   0L 
 
-let syscall_write (m: Mach.t) (fd: int64) (buf: int64) (count: int64) : int64 =
-  0L 
+let syscall_write (m: Mach.t) (_fd: int64) (buf: int64) (count: int64) : int64 =
+  let bytes = Memory.read_bytes buf count m.mem in 
+  List.iter (fun (byte: Mach.sbyte) -> 
+    match byte with
+    | Byte(c) -> Printf.printf "%c" c
+    | _ -> Printf.printf "."
+  ) bytes; List.length bytes |> Int64.of_int 
 
 let syscall_exit (m: Mach.t) (status: int64) : int64 =
   m.pc <- Int64.sub 0xfdeadL 8L;
   status 
 
-let execute_syscall (m: Mach.t) (n: int64) : Mach.t =
-  let syscall_exec = number_to_syscall n in 
+let execute_syscall (m: Mach.t) : Mach.t =
+  let syscall_exec = number_to_syscall m.regs.(Mach.reg_index X8) in 
   let arg0 = m.regs.(Mach.reg_index X0) in 
   let arg1 = m.regs.(Mach.reg_index X1) in 
   let arg2 = m.regs.(Mach.reg_index X2) in 

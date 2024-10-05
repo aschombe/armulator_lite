@@ -1,0 +1,153 @@
+.:  --exclude-dir=1
+./.gitignore:  listed in $Not_Code_Extension{gitignore}
+./INSN_SET.md:  zero sized file
+./README.md:  duplicate of ./_build/install/default/doc/armulator_lite/README.md
+./_build/.db:  binary file
+./_build/.digest-db:  binary file
+./_build/.filesystem-clock:  language unknown (#3)
+./_build/.lock:  language unknown (#3)
+./_build/.to-delete-in-source-tree:  binary file
+./_build/default/.dune/configurator:  language unknown (#3)
+./_build/default/.dune/configurator.v2:  language unknown (#3)
+./_build/default/README.md:  duplicate of ./_build/install/default/doc/armulator_lite/README.md
+./_build/default/armulator_lite.dune-package:  language unknown (#3)
+./_build/default/armulator_lite.install:  language unknown (#3)
+./_build/default/armulator_lite.opam:  language unknown (#3)
+./_build/default/bin/.main.eobjs/byte/dune__exe__Main.cmi:  binary file
+./_build/default/bin/.main.eobjs/byte/dune__exe__Main.cmti:  binary file
+./_build/default/bin/.main.eobjs/native/dune__exe__Main.cmx:  binary file
+./_build/default/bin/.main.eobjs/native/dune__exe__Main.o:  binary file
+./_build/default/bin/.merlin-conf/exe-main:  binary file
+./_build/default/bin/main.exe:  binary file
+./_build/default/bin/main.ml:  duplicate of ./bin/main.ml
+./_build/default/bin/main.mli:  duplicate of ./_build/default/test/test_armulator_lite.mli
+./_build/default/lib/arm/.arm.objs/byte/arm.cmi:  binary file
+./_build/default/lib/arm/.arm.objs/byte/arm.cmo:  binary file
+./_build/default/lib/arm/.arm.objs/byte/arm.cmt:  binary file
+./_build/default/lib/arm/.arm.objs/native/arm.cmx:  binary file
+./_build/default/lib/arm/.arm.objs/native/arm.o:  binary file
+./_build/default/lib/arm/.merlin-conf/lib-arm:  binary file
+./_build/default/lib/arm/arm.a:  binary file
+./_build/default/lib/arm/arm.cma:  binary file
+./_build/default/lib/arm/arm.cmxa:  binary file
+./_build/default/lib/arm/arm.cmxs:  binary file
+./_build/default/lib/arm/arm.ml:  duplicate of ./lib/arm/arm.ml
+./_build/default/lib/mach/.decoder.objs/byte/decoder.cmi:  binary file
+./_build/default/lib/mach/.decoder.objs/byte/decoder.cmo:  binary file
+./_build/default/lib/mach/.decoder.objs/byte/decoder.cmt:  binary file
+./_build/default/lib/mach/.decoder.objs/native/decoder.cmx:  binary file
+./_build/default/lib/mach/.decoder.objs/native/decoder.o:  binary file
+./_build/default/lib/mach/.emulator.objs/byte/emulator.cmi:  binary file
+./_build/default/lib/mach/.emulator.objs/byte/emulator.cmo:  binary file
+./_build/default/lib/mach/.emulator.objs/byte/emulator.cmt:  binary file
+./_build/default/lib/mach/.emulator.objs/native/emulator.cmx:  binary file
+./_build/default/lib/mach/.emulator.objs/native/emulator.o:  binary file
+./_build/default/lib/mach/.int64_overflow.objs/byte/int64_overflow.cmi:  binary file
+./_build/default/lib/mach/.int64_overflow.objs/byte/int64_overflow.cmo:  binary file
+./_build/default/lib/mach/.int64_overflow.objs/byte/int64_overflow.cmt:  binary file
+./_build/default/lib/mach/.int64_overflow.objs/native/int64_overflow.cmx:  binary file
+./_build/default/lib/mach/.int64_overflow.objs/native/int64_overflow.o:  binary file
+./_build/default/lib/mach/.mach.objs/byte/mach.cmi:  binary file
+./_build/default/lib/mach/.mach.objs/byte/mach.cmo:  binary file
+./_build/default/lib/mach/.mach.objs/byte/mach.cmt:  binary file
+./_build/default/lib/mach/.mach.objs/native/mach.cmx:  binary file
+./_build/default/lib/mach/.mach.objs/native/mach.o:  binary file
+./_build/default/lib/mach/.memory.objs/byte/memory.cmi:  binary file
+./_build/default/lib/mach/.memory.objs/byte/memory.cmo:  binary file
+./_build/default/lib/mach/.memory.objs/byte/memory.cmt:  binary file
+./_build/default/lib/mach/.memory.objs/native/memory.cmx:  binary file
+./_build/default/lib/mach/.memory.objs/native/memory.o:  binary file
+./_build/default/lib/mach/.merlin-conf/lib-decoder:  binary file
+./_build/default/lib/mach/.merlin-conf/lib-emulator:  binary file
+./_build/default/lib/mach/.merlin-conf/lib-int64_overflow:  binary file
+./_build/default/lib/mach/.merlin-conf/lib-mach:  binary file
+./_build/default/lib/mach/.merlin-conf/lib-memory:  binary file
+./_build/default/lib/mach/.merlin-conf/lib-system:  binary file
+./_build/default/lib/mach/.system.objs/byte/system.cmi:  binary file
+./_build/default/lib/mach/.system.objs/byte/system.cmo:  binary file
+./_build/default/lib/mach/.system.objs/byte/system.cmt:  binary file
+./_build/default/lib/mach/.system.objs/native/system.cmx:  binary file
+./_build/default/lib/mach/.system.objs/native/system.o:  binary file
+./_build/default/lib/mach/decoder.a:  binary file
+./_build/default/lib/mach/decoder.cma:  binary file
+./_build/default/lib/mach/decoder.cmxa:  binary file
+./_build/default/lib/mach/decoder.cmxs:  binary file
+./_build/default/lib/mach/decoder.ml:  duplicate of ./lib/mach/decoder.ml
+./_build/default/lib/mach/emulator.a:  binary file
+./_build/default/lib/mach/emulator.cma:  binary file
+./_build/default/lib/mach/emulator.cmxa:  binary file
+./_build/default/lib/mach/emulator.cmxs:  binary file
+./_build/default/lib/mach/emulator.ml:  duplicate of ./lib/mach/emulator.ml
+./_build/default/lib/mach/int64_overflow.a:  binary file
+./_build/default/lib/mach/int64_overflow.cma:  binary file
+./_build/default/lib/mach/int64_overflow.cmxa:  binary file
+./_build/default/lib/mach/int64_overflow.cmxs:  binary file
+./_build/default/lib/mach/int64_overflow.ml:  duplicate of ./lib/mach/int64_overflow.ml
+./_build/default/lib/mach/mach.a:  binary file
+./_build/default/lib/mach/mach.cma:  binary file
+./_build/default/lib/mach/mach.cmxa:  binary file
+./_build/default/lib/mach/mach.cmxs:  binary file
+./_build/default/lib/mach/mach.ml:  duplicate of ./lib/mach/mach.ml
+./_build/default/lib/mach/memory.a:  binary file
+./_build/default/lib/mach/memory.cma:  binary file
+./_build/default/lib/mach/memory.cmxa:  binary file
+./_build/default/lib/mach/memory.cmxs:  binary file
+./_build/default/lib/mach/memory.ml:  duplicate of ./lib/mach/memory.ml
+./_build/default/lib/mach/system.a:  binary file
+./_build/default/lib/mach/system.cma:  binary file
+./_build/default/lib/mach/system.cmxa:  binary file
+./_build/default/lib/mach/system.cmxs:  binary file
+./_build/default/lib/parser/.arm_parser.objs/byte/arm_parser.cmi:  binary file
+./_build/default/lib/parser/.arm_parser.objs/byte/arm_parser.cmo:  binary file
+./_build/default/lib/parser/.arm_parser.objs/byte/arm_parser.cmt:  binary file
+./_build/default/lib/parser/.arm_parser.objs/native/arm_parser.cmx:  binary file
+./_build/default/lib/parser/.arm_parser.objs/native/arm_parser.o:  binary file
+./_build/default/lib/parser/.arm_stringifier.objs/byte/arm_stringifier.cmi:  binary file
+./_build/default/lib/parser/.arm_stringifier.objs/byte/arm_stringifier.cmo:  binary file
+./_build/default/lib/parser/.arm_stringifier.objs/byte/arm_stringifier.cmt:  binary file
+./_build/default/lib/parser/.arm_stringifier.objs/native/arm_stringifier.cmx:  binary file
+./_build/default/lib/parser/.arm_stringifier.objs/native/arm_stringifier.o:  binary file
+./_build/default/lib/parser/.arm_validator.objs/byte/arm_validator.cmi:  binary file
+./_build/default/lib/parser/.arm_validator.objs/byte/arm_validator.cmo:  binary file
+./_build/default/lib/parser/.arm_validator.objs/byte/arm_validator.cmt:  binary file
+./_build/default/lib/parser/.arm_validator.objs/native/arm_validator.cmx:  binary file
+./_build/default/lib/parser/.arm_validator.objs/native/arm_validator.o:  binary file
+./_build/default/lib/parser/.merlin-conf/lib-arm_parser:  binary file
+./_build/default/lib/parser/.merlin-conf/lib-arm_stringifier:  binary file
+./_build/default/lib/parser/.merlin-conf/lib-arm_validator:  binary file
+./_build/default/lib/parser/arm_parser.a:  binary file
+./_build/default/lib/parser/arm_parser.cma:  binary file
+./_build/default/lib/parser/arm_parser.cmxa:  binary file
+./_build/default/lib/parser/arm_parser.cmxs:  binary file
+./_build/default/lib/parser/arm_parser.ml:  duplicate of ./lib/parser/arm_parser.ml
+./_build/default/lib/parser/arm_stringifier.a:  binary file
+./_build/default/lib/parser/arm_stringifier.cma:  binary file
+./_build/default/lib/parser/arm_stringifier.cmxa:  binary file
+./_build/default/lib/parser/arm_stringifier.cmxs:  binary file
+./_build/default/lib/parser/arm_stringifier.ml:  duplicate of ./lib/parser/arm_stringifier.ml
+./_build/default/lib/parser/arm_validator.a:  binary file
+./_build/default/lib/parser/arm_validator.cma:  binary file
+./_build/default/lib/parser/arm_validator.cmxa:  binary file
+./_build/default/lib/parser/arm_validator.cmxs:  binary file
+./_build/default/lib/parser/arm_validator.ml:  duplicate of ./lib/parser/arm_validator.ml
+./_build/default/test/.merlin-conf/exe-test_armulator_lite:  binary file
+./_build/default/test/.test_armulator_lite.eobjs/byte/dune__exe__Test_armulator_lite.cmi:  binary file
+./_build/default/test/.test_armulator_lite.eobjs/byte/dune__exe__Test_armulator_lite.cmti:  binary file
+./_build/default/test/.test_armulator_lite.eobjs/native/dune__exe__Test_armulator_lite.cmx:  binary file
+./_build/default/test/.test_armulator_lite.eobjs/native/dune__exe__Test_armulator_lite.o:  binary file
+./_build/default/test/test_armulator_lite.exe:  binary file
+./_build/default/test/test_armulator_lite.ml:  duplicate of ./test/test_armulator_lite.ml
+./_build/install/default/bin/armulator_lite:  binary file
+./_build/install/default/lib/armulator_lite/dune-package:  language unknown (#3)
+./_build/install/default/lib/armulator_lite/opam:  language unknown (#3)
+./_build/log:  language unknown (#3)
+./arml:  binary file
+./armulator_lite.opam:  language unknown (#3)
+./bin/dune:  language unknown (#3)
+./bin/main.exe:  binary file
+./dune-project:  language unknown (#3)
+./lib/arm/dune:  language unknown (#3)
+./lib/mach/dune:  language unknown (#3)
+./lib/parser/dune:  language unknown (#3)
+./node_modules/.lsp/debug.log:  language unknown (#3)
+./test/dune:  language unknown (#3)
