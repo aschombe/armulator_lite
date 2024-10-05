@@ -44,6 +44,29 @@ type mach = {
 
 type t = mach
 
+let copy (m: mach) : mach = 
+  {
+    opts = { debugger = m.opts.debugger; print_machine_state = m.opts.print_machine_state};
+    info = { 
+      mem_bot = m.info.mem_bot;
+      mem_size = m.info.mem_size;
+      mem_top = m.info.mem_top;
+      nregs = m.info.nregs;
+      exit_val = m.info.exit_val;
+      entry = m.info.entry;
+      layout = m.info.layout;
+    };
+    regs = Array.copy m.regs;
+    pc = m.pc; 
+    mem = Array.copy m.mem;
+    flags = { 
+      n = m.flags.n;
+      v = m.flags.v;
+      z = m.flags.z;
+      c = m.flags.c;
+    };
+  }
+
 let reg_index = function
   | Arm.X0 | Arm.W0 -> 0 | Arm.X1 | Arm.W1 -> 1 | Arm.X2 | Arm.W2 -> 2 | Arm.X3 | Arm.W3 -> 3 
   | Arm.X4 | Arm.W4 -> 4 | Arm.X5 | Arm.W5 -> 5 | Arm.X6 | Arm.W6 -> 6 | Arm.X7 | Arm.W7 -> 7 
@@ -272,16 +295,23 @@ let print_machine_info (m: mach) : unit =
   print_endline ("entry = {" ^ (fst m.info.entry) ^ " @ " ^ (Int64.to_string (snd m.info.entry)) ^ "}");
   print_endline ("layout = [\n" ^ layout_str ^ "\n]")
 
-let print_machine_state (m: mach) : unit = 
+let print_machine_regs (m: mach) : unit = 
   let regs_string = Array.map Int64.to_string m.regs |> Array.to_list |> String.concat "; " in
+  print_endline ("\tregs = [" ^ regs_string ^ "]")
+let print_machine_pc (m: mach) : unit = 
+  print_endline ("\tpc = " ^ (Int64.to_string m.pc))
+let print_machine_flags (m: mach) : unit =
   let n_flag = "n -> " ^ (Bool.to_string m.flags.n) in 
   let z_flag = "n -> " ^ (Bool.to_string m.flags.z) in 
   let c_flag = "n -> " ^ (Bool.to_string m.flags.c) in 
   let v_flag = "n -> " ^ (Bool.to_string m.flags.v) in 
   let flags_string = n_flag ^ "; " ^ z_flag ^ "; " ^ c_flag ^ "; " ^ v_flag in
-  print_endline ("\tregs = [" ^ regs_string ^ "]");
-  print_endline ("\tpc = " ^ (Int64.to_string m.pc));
   print_endline ("\tflags = {" ^ flags_string ^ "}")
+
+let print_machine_state (m: mach) : unit = 
+  print_machine_regs m;
+  print_machine_pc m;
+  print_machine_flags m
 
 (* default machine has
  mem_bot = 0x400000L

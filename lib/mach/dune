@@ -26,6 +26,6 @@
 (library
   (name emulator)
   (modules emulator)
-  (libraries arm mach decoder int64_overflow system memory))
+  (libraries arm mach decoder int64_overflow system memory arm_parser))
 
 

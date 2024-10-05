@@ -57,7 +57,7 @@ let main lines =
   if !print_machine_state then Mach.print_machine_state m;
   if !debug then _debug lines; 
   if !print_ast then print_endline (Arm_stringifier.ast_string_of_prog prog);
-  Emulator.run m
+  if !debugger then Emulator.debug m else Emulator.run m
 
 
 let args =

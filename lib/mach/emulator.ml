@@ -1,4 +1,3 @@
-
 let data_into_reg (r: Arm.reg) (value: Arm.data) (rgs: int64 array) : unit = 
   match value with
   | Arm.Quad i -> rgs.(Mach.reg_index r) <- i 
@@ -235,3 +234,58 @@ let run (m: Mach.t) : unit =
       (m'.pc <- (Int64.add m'.pc 8L); loop m')
   in print_endline "\n__emulator_start"; loop m 
 
+let unwrap_str s =
+  match s with
+  | Some(v) -> v 
+  | None -> ""
+
+let debug (m: Mach.t) : unit = 
+  let dbg_step (m: Mach.t) : Mach.t = 
+    let m' = step m in 
+    if Int64.equal m'.pc m'.info.exit_val || Int64.equal m'.regs.(Mach.reg_index Arm.SP) m'.info.exit_val then (print_endline "__emulator_stop\n"; Mach.print_machine_state m'; m') else
+      (m'.pc <- (Int64.add m'.pc 8L); m') in 
+  let rec loop (m: Mach.t) (steps: Mach.t list) : unit =
+    Printf.printf "(dbg) %!";
+    let broken = In_channel.input_line stdin |> unwrap_str |> String.split_on_char ' ' in 
+    let command = List.hd broken in 
+    let args = List.tl broken in
+    match command with 
+    | "s" | "step" -> begin
+      let copied = Mach.copy m in
+      let m' = dbg_step m in loop m' (copied :: steps)
+    end
+    | "bs" | "backstep" -> begin
+      if List.length steps > 0 then 
+        let prev_state = List.hd steps in 
+        let other_steps = List.tl steps in 
+        Printf.printf "+%04d: %s\n" (prev_state.pc |> Int64.to_int) (Mach.get_insn prev_state prev_state.pc |> Arm_stringifier.string_of_insn);
+        loop prev_state other_steps
+      else 
+        Printf.printf "no previous steps\n%!"; loop m steps
+    end
+    | "r" | "register" -> begin
+      try 
+        let reg = Arm_parser.register_of_string (0, String.concat " " broken) (List.nth args 0) in
+        let rval = Arm_parser.token_to_int64 (0, String.concat " " broken) (List.nth args 1) in 
+        m.regs.(Mach.reg_index reg) <- rval;
+        loop m steps
+      with _ -> 
+        Printf.printf "invalid command \"%s\"\n%!" (String.concat " " broken); loop m steps
+    end
+    | "q" | "quit" -> begin 
+      Printf.printf "terminated via command\n%!"; exit 0
+    end
+    | "sh" | "show" -> begin 
+      try 
+        match (List.nth args 0) with 
+        | "info" -> Mach.print_machine_info m; loop m steps
+        | "state" -> Mach.print_machine_state m; loop m steps
+        | "regs" -> Mach.print_machine_regs m; loop m steps
+        | "flags" -> Mach.print_machine_flags m; loop m steps 
+        | "pc" -> Mach.print_machine_pc m; loop m steps
+        | _ -> Printf.printf "invalid command \"%s\"\n%!" (String.concat " " broken); loop m steps
+      with _ ->
+        Printf.printf "invalid arg \"%s\" (use \"info\", \"regs\", \"pc\", \"flags\" or \"state\")\n%!" (String.concat " " broken); loop m steps
+    end
+    | _ -> (Printf.printf "unknown command \"%s\"\n%!" command; loop m steps)
+  in loop m []
