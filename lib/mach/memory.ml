@@ -28,6 +28,13 @@ let rec read_bytes (addr: int64) (count: int64) (m: Mach.sbyte array) : Mach.sby
   | 1L -> [read_at addr m]
   | _ ->  (read_bytes addr (Int64.sub count 1L) m) @ [read_at (Int64.add addr (Int64.sub count 1L)) m]
 
+let rec read_to_null_terminator (addr: int64) (m: Mach.sbyte array) : Mach.sbyte list =
+  let byte = read_at addr m in
+  match byte with
+  | Byte '\000' -> [byte]
+  | Byte _ ->  [byte] @ (read_to_null_terminator (Int64.add addr 1L) m)
+  | _ -> []
+
 let mem_store (m: Mach.t) (v: Arm.data) (o: Arm.operand) (rgs: int64 array) (mem: Mach.sbyte array) : unit =
   let str_addr = (mem_store_address m o rgs) in 
   data_into_memory str_addr v mem

@@ -212,9 +212,14 @@ let step (m: Mach.t) : Mach.t =
   | (Arm.Bl, [o1]) -> 
     let label_name = Decoder.operand_as_label m o1 in 
     let label_val = Mach.lookup_label m.info.layout label_name in 
-    m.regs.(Mach.reg_index Arm.LR) <- m.pc;
-    m.pc <- Int64.sub (Int64.sub label_val m.info.mem_bot) 8L; (* subtract 8 because step will increment PC *)
-    m
+    let m' = begin match (Memory.read_bytes (Int64.sub label_val m.info.mem_bot) 1L m.mem) with 
+      | [ExternSym s] -> System.execute_extern_function m s
+      | _ -> (
+        m.regs.(Mach.reg_index Arm.LR) <- m.pc;
+        m.pc <- Int64.sub (Int64.sub label_val m.info.mem_bot) 8L;
+        m) 
+    end in
+    m'
   | (Arm.Ret, []) -> 
     m.pc <- m.regs.(Mach.reg_index Arm.LR);
     m

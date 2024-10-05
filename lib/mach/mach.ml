@@ -109,7 +109,7 @@ let gen_layout (m: mach) (prog: Arm.prog) : (string * int64) list =
         let (offset, kvps) = begin
           match h with
           | Arm.GloblDef _ -> (offset, [])
-          | Arm.ExternSym label -> (Int64.add insn_size offset, [(label, offset)])
+          | Arm.ExternSym label -> (offset, [(label, offset)])
           | Arm.TextDirect block -> List.fold_left (fun (offset_acc, kvps_acc) insn -> 
               let (offset, kvps) = text_block_layout insn offset_acc in
               (offset, kvps_acc @ [kvps])
@@ -158,9 +158,16 @@ let int32_of_sbytes (bs:sbyte list) : int32 =
   in
   List.fold_right f bs 0l
 
+let rec string_of_sbytes (bs: sbyte list) : string = 
+  match bs with 
+  | [] -> ""
+  | Byte c::t -> (String.make 1 c) ^ string_of_sbytes t
+  | _ -> ""
+
 let build_program (prog: Arm.prog) : sbyte list =
   let build_insn (insn: Arm.insn) : sbyte list = [Insn insn; InsFill; InsFill; InsFill; InsFill; InsFill; InsFill; InsFill] in
   let build_global_def (label: Arm.lbl) : sbyte list = [GlobalDef label; InsFill; InsFill; InsFill; InsFill; InsFill; InsFill; InsFill] in
+  let build_extern_def (label: Arm.lbl) : sbyte list = [ExternSym label; InsFill; InsFill; InsFill; InsFill; InsFill; InsFill; InsFill] in
   let build_data (data: Arm.data) : sbyte list = 
     match data with
     | Arm.Quad n -> sbytes_of_int64 n
@@ -178,7 +185,7 @@ let build_program (prog: Arm.prog) : sbyte list =
   let build_directive (dir: Arm.tld) : sbyte list =
     match dir with
     | Arm.GloblDef l -> build_global_def l
-    | Arm.ExternSym s -> [ExternSym s]
+    | Arm.ExternSym s -> build_extern_def s
     | Arm.TextDirect blocks
     | Arm.DataDirect blocks -> List.concat (List.map build_block blocks)
   in
