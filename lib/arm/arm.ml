@@ -38,7 +38,7 @@ type opcode =
     | Add | Sub | Mul 
     | Adds | Subs | Muls 
     | And | Orr | Lsl | Lsr | Asr | Not
-    | Ands | Orrs | Lsls | Lsrs | Nots 
+    | Ands | Orrs | Lsls | Lsrs | Asrs | Nots 
     | Br | B of cnd | Cmp | Cbz | Cbnz
     | Bl | Ret 
     | Svc

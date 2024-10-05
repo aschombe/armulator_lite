@@ -227,7 +227,7 @@ let opcode_of_string ((ln, insn) : code_line) (mnemonic : string) : Arm.opcode =
   | "add" -> Arm.Add| "sub" -> Arm.Sub  | "mul" -> Arm.Mul 
   | "adds" -> Arm.Adds | "subs" -> Arm.Subs | "muls" -> Arm.Muls
   | "and" -> Arm.And | "orr" -> Arm.Orr  | "lsl" -> Arm.Lsl | "lsr" -> Arm.Lsr  | "asr" -> Arm.Asr | "not" -> Arm.Not
-  | "ands" -> Arm.Ands | "orrs" -> Arm.Orrs | "lsls" -> Arm.Lsls | "lsrs" -> Arm.Lsrs | "nots" -> Arm.Nots
+  | "ands" -> Arm.Ands | "orrs" -> Arm.Orrs | "lsls" -> Arm.Lsls | "lsrs" -> Arm.Lsrs | "asrs" -> Arm.Asrs | "nots" -> Arm.Nots
   | "b" -> (
     try
       let cnd_code_mnemonic = List.nth (String.split_on_char '.' mnemonic) 1 in 

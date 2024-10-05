@@ -71,45 +71,133 @@ let step (m: Mach.t) : Mach.t =
     m
   | (Arm.Add, [o1; o2; o3]) -> 
     let reg = Decoder.operand_as_register m o1 in 
-    let addend1 = Decoder.operand_as_int64 m o2 in 
-    let addend2 = Decoder.operand_as_int64 m o3 in 
-    m.regs.(Mach.reg_index reg) <- Int64.add addend1 addend2;
+    let operand1 = Decoder.operand_as_int64 m o2 in 
+    let operand2 = Decoder.operand_as_int64 m o3 in 
+    m.regs.(Mach.reg_index reg) <- Int64.add operand1 operand2;
     m
   | (Arm.Adds, [o1; o2; o3]) ->
     let reg = Decoder.operand_as_register m o1 in 
-    let addend1 = Decoder.operand_as_int64 m o2 in 
-    let addend2 = Decoder.operand_as_int64 m o3 in 
-    let result = Int64_overflow.add addend1 addend2 in 
+    let operand1 = Decoder.operand_as_int64 m o2 in 
+    let operand2 = Decoder.operand_as_int64 m o3 in 
+    let result = Int64_overflow.add operand1 operand2 in 
     let n_flags = update_flags result in
     m.flags <- n_flags;
     m.regs.(Mach.reg_index reg) <- result.value;
     m
   | (Arm.Sub, [o1; o2; o3]) -> 
     let reg = Decoder.operand_as_register m o1 in 
-    let addend1 = Decoder.operand_as_int64 m o2 in 
-    let addend2 = Decoder.operand_as_int64 m o3 in 
-    m.regs.(Mach.reg_index reg) <- Int64.sub addend1 addend2;
+    let operand1 = Decoder.operand_as_int64 m o2 in 
+    let operand2 = Decoder.operand_as_int64 m o3 in 
+    m.regs.(Mach.reg_index reg) <- Int64.sub operand1 operand2;
     m
   | (Arm.Subs, [o1; o2; o3]) ->
     let reg = Decoder.operand_as_register m o1 in 
-    let addend1 = Decoder.operand_as_int64 m o2 in 
-    let addend2 = Decoder.operand_as_int64 m o3 in 
-    let result = Int64_overflow.sub addend1 addend2 in 
+    let operand1 = Decoder.operand_as_int64 m o2 in 
+    let operand2 = Decoder.operand_as_int64 m o3 in 
+    let result = Int64_overflow.sub operand1 operand2 in 
     let n_flags = update_flags result in
     m.flags <- n_flags;
     m.regs.(Mach.reg_index reg) <- result.value;
     m
   | (Arm.Mul, [o1; o2; o3]) -> 
     let reg = Decoder.operand_as_register m o1 in 
-    let addend1 = Decoder.operand_as_int64 m o2 in 
-    let addend2 = Decoder.operand_as_int64 m o3 in 
-    m.regs.(Mach.reg_index reg) <- Int64.mul addend1 addend2;
+    let operand1 = Decoder.operand_as_int64 m o2 in 
+    let operand2 = Decoder.operand_as_int64 m o3 in 
+    m.regs.(Mach.reg_index reg) <- Int64.mul operand1 operand2;
     m
   | (Arm.Muls, [o1; o2; o3]) ->
     let reg = Decoder.operand_as_register m o1 in 
-    let addend1 = Decoder.operand_as_int64 m o2 in 
-    let addend2 = Decoder.operand_as_int64 m o3 in 
-    let result = Int64_overflow.mul addend1 addend2 in 
+    let operand1 = Decoder.operand_as_int64 m o2 in 
+    let operand2 = Decoder.operand_as_int64 m o3 in 
+    let result = Int64_overflow.mul operand1 operand2 in 
+    let n_flags = update_flags result in
+    m.flags <- n_flags;
+    m.regs.(Mach.reg_index reg) <- result.value;
+    m
+  | (Arm.And, [o1; o2; o3]) -> 
+    let reg = Decoder.operand_as_register m o1 in 
+    let operand1 = Decoder.operand_as_int64 m o2 in 
+    let operand2 = Decoder.operand_as_int64 m o3 in 
+    m.regs.(Mach.reg_index reg) <- Int64.logand operand1 operand2;
+    m
+  | (Arm.Ands, [o1; o2; o3]) ->
+    let reg = Decoder.operand_as_register m o1 in 
+    let operand1 = Decoder.operand_as_int64 m o2 in 
+    let operand2 = Decoder.operand_as_int64 m o3 in 
+    let result : Int64_overflow.t = { value = Int64.logand operand1 operand2; overflow = false; } in 
+    let n_flags = update_flags result in
+    m.flags <- n_flags;
+    m.regs.(Mach.reg_index reg) <- result.value;
+    m
+  | (Arm.Orr, [o1; o2; o3]) -> 
+    let reg = Decoder.operand_as_register m o1 in 
+    let operand1 = Decoder.operand_as_int64 m o2 in 
+    let operand2 = Decoder.operand_as_int64 m o3 in 
+    m.regs.(Mach.reg_index reg) <- Int64.logor operand1 operand2;
+    m
+  | (Arm.Orrs, [o1; o2; o3]) ->
+    let reg = Decoder.operand_as_register m o1 in 
+    let operand1 = Decoder.operand_as_int64 m o2 in 
+    let operand2 = Decoder.operand_as_int64 m o3 in 
+    let result : Int64_overflow.t = { value = Int64.logor operand1 operand2; overflow = false; } in 
+    let n_flags = update_flags result in
+    m.flags <- n_flags;
+    m.regs.(Mach.reg_index reg) <- result.value;
+    m
+  | (Arm.Lsl, [o1; o2; o3]) -> 
+    let reg = Decoder.operand_as_register m o1 in 
+    let operand1 = Decoder.operand_as_int64 m o2 in 
+    let operand2 = Decoder.operand_as_int64 m o3 |> Int64.to_int in 
+    m.regs.(Mach.reg_index reg) <- Int64.shift_left operand1 operand2;
+    m
+  | (Arm.Lsls, [o1; o2; o3]) ->
+    let reg = Decoder.operand_as_register m o1 in 
+    let operand1 = Decoder.operand_as_int64 m o2 in 
+    let operand2 = Decoder.operand_as_int64 m o3 |> Int64.to_int in 
+    let result : Int64_overflow.t = { value = Int64.shift_left operand1 operand2; overflow = false; } in 
+    let n_flags = update_flags result in
+    m.flags <- n_flags;
+    m.regs.(Mach.reg_index reg) <- result.value;
+    m
+  | (Arm.Lsr, [o1; o2; o3]) -> 
+    let reg = Decoder.operand_as_register m o1 in 
+    let operand1 = Decoder.operand_as_int64 m o2 in 
+    let operand2 = Decoder.operand_as_int64 m o3 |> Int64.to_int in 
+    m.regs.(Mach.reg_index reg) <- Int64.shift_right_logical operand1 operand2;
+    m
+  | (Arm.Lsrs, [o1; o2; o3]) ->
+    let reg = Decoder.operand_as_register m o1 in 
+    let operand1 = Decoder.operand_as_int64 m o2 in 
+    let operand2 = Decoder.operand_as_int64 m o3 |> Int64.to_int in 
+    let result : Int64_overflow.t = { value = Int64.shift_right_logical operand1 operand2; overflow = false; } in 
+    let n_flags = update_flags result in
+    m.flags <- n_flags;
+    m.regs.(Mach.reg_index reg) <- result.value;
+    m
+  | (Arm.Asr, [o1; o2; o3]) -> 
+    let reg = Decoder.operand_as_register m o1 in 
+    let operand1 = Decoder.operand_as_int64 m o2 in 
+    let operand2 = Decoder.operand_as_int64 m o3 |> Int64.to_int in 
+    m.regs.(Mach.reg_index reg) <- Int64.shift_right operand1 operand2;
+    m
+  | (Arm.Asrs, [o1; o2; o3]) ->
+    let reg = Decoder.operand_as_register m o1 in 
+    let operand1 = Decoder.operand_as_int64 m o2 in 
+    let operand2 = Decoder.operand_as_int64 m o3 |> Int64.to_int in 
+    let result : Int64_overflow.t = { value = Int64.shift_right operand1 operand2; overflow = false; } in 
+    let n_flags = update_flags result in
+    m.flags <- n_flags;
+    m.regs.(Mach.reg_index reg) <- result.value;
+    m
+  | (Arm.Not, [o1; o2]) -> 
+    let reg = Decoder.operand_as_register m o1 in 
+    let operand1 = Decoder.operand_as_int64 m o2 in
+    m.regs.(Mach.reg_index reg) <- Int64.lognot operand1;
+    m
+  | (Arm.Nots, [o1; o2]) ->
+    let reg = Decoder.operand_as_register m o1 in 
+    let operand1 = Decoder.operand_as_int64 m o2 in 
+    let result : Int64_overflow.t = { value = Int64.lognot operand1; overflow = false; } in 
     let n_flags = update_flags result in
     m.flags <- n_flags;
     m.regs.(Mach.reg_index reg) <- result.value;

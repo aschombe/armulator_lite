@@ -32,7 +32,7 @@ let string_of_opcode = function
     | Add -> "add" | Sub -> "sub" | Mul -> "mul"
     | Adds -> "adds" | Subs -> "subs" | Muls -> "muls"
     | And -> "and" | Orr -> "orr" | Lsl -> "lsl" | Lsr -> "lsr" | Asr -> "asr" | Not -> "not"
-    | Ands -> "ands" | Orrs -> "orrs" | Lsls -> "lsls" | Lsrs -> "lsrs" | Nots -> "nots"
+    | Ands -> "ands" | Orrs -> "orrs" | Lsls -> "lsls" | Lsrs -> "lsrs" | Asrs -> "asrs" | Nots -> "nots"
     | Br -> "br"
     | B Al -> "b"
     | B c -> "b." ^ (match c with
@@ -51,7 +51,7 @@ let ast_string_of_opcode = function
     | Add -> "Arm.Add" | Sub -> "Arm.Sub" | Mul -> "Arm.Mul"
     | Adds -> "Arm.Adds" | Subs -> "Arm.Subs" | Muls -> "Arm.Muls"
     | And -> "Arm.And" | Orr -> "Arm.Orr" | Lsl -> "Arm.Lsl" | Lsr -> "Arm.Lsr" | Asr -> "Arm.Asr" | Not -> "Arm.Not"
-    | Ands -> "Arm.Ands" | Orrs -> "Arm.Orrs" | Lsls -> "Arm.Lsls" | Arm.Lsrs -> "Arm.Lsrs" | Nots -> "Arm.Nots"
+    | Ands -> "Arm.Ands" | Orrs -> "Arm.Orrs" | Lsls -> "Arm.Lsls" | Arm.Lsrs -> "Arm.Lsrs" | Asrs -> "Arm.Asrs" | Nots -> "Arm.Nots"
     | Br -> "Arm.Br"
     | B c -> "Arm.B(" ^ (
         match c with
