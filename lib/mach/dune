@@ -1,11 +1,21 @@
 (library
   (name mach)
   (modules mach)
-  (libraries arm arm_stringifier str))
+  (libraries arm arm_stringifier str num))
+
+(library
+  (name int64_overflow)
+  (modules int64_overflow)
+  (libraries num))
+
+(library
+  (name decoder)
+  (modules decoder)
+  (libraries arm mach))
 
 (library
   (name emulator)
   (modules emulator)
-  (libraries arm mach))
+  (libraries arm mach decoder))
 
 
