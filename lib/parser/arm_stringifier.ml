@@ -34,7 +34,9 @@ let string_of_opcode = function
     | And -> "and" | Orr -> "orr" | Lsl -> "lsl" | Lsr -> "lsr" | Asr -> "asr" | Not -> "not"
     | Ands -> "ands" | Orrs -> "orrs" | Lsls -> "lsls" | Lsrs -> "lsrs" | Nots -> "nots"
     | Br -> "br"
+    | B Al -> "b"
     | B c -> "b." ^ (match c with
+        | Al -> ""
         | Eq -> "eq"
         | Ne -> "ne"
         | Lt -> "lt"
@@ -53,7 +55,7 @@ let ast_string_of_opcode = function
     | Br -> "Arm.Br"
     | B c -> "Arm.B(" ^ (
         match c with
-        | Eq -> "Arm.Eq" | Ne -> "Arm.Ne" | Lt -> "Arm.Lt" | Le -> "Arm.Le" | Gt -> "Arm.Gt" | Ge -> "Arm.Ge") ^ ")"
+        | Al -> "Arm.Al" | Eq -> "Arm.Eq" | Ne -> "Arm.Ne" | Lt -> "Arm.Lt" | Le -> "Arm.Le" | Gt -> "Arm.Gt" | Ge -> "Arm.Ge") ^ ")"
     | Cmp -> "Arm.Cmp" | Cbz -> "Arm.Cbz" | Cbnz -> "Arm.Cbnz" | Bl -> "Arm.Bl" | Ret -> "Arm.Ret"
     | Svc -> "Arm.Svc"
 

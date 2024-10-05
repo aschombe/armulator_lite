@@ -220,8 +220,7 @@ let transform_extern_defs (defs : code_line list) : Arm.tld list =
 (* instruction parsing *)
 let opcode_of_string ((ln, insn) : code_line) (mnemonic : string) : Arm.opcode = 
   let pieces = String.split_on_char '.' mnemonic in
-  let partial = List.nth pieces 0 in 
-  let cnd_code_mnemoic = (if List.length pieces > 1 then List.nth pieces 1 else "") in
+  let partial = List.nth pieces 0 in
   match partial with
   | "mov" -> Arm.Mov | "adr" -> Arm.Adr 
   | "ldr" -> Arm.Ldr | "str" -> Arm.Str 
@@ -239,8 +238,9 @@ let opcode_of_string ((ln, insn) : code_line) (mnemonic : string) : Arm.opcode =
       | "le" -> Arm.Le
       | "gt" -> Arm.Gt 
       | "ge" -> Arm.Ge
+      | "" -> Arm.Al
       | _ -> raise Syntax_error) in Arm.B cnd_code
-    with _ -> arm_error ln insn cnd_code_mnemoic "Invalid condition code")
+    with _ -> Arm.B(Arm.Al))
   | "cmp" -> Arm.Cmp | "cbz" -> Arm.Cbz  | "cbnz" -> Arm.Cbnz 
   | "bl" -> Arm.Bl  | "ret" -> Arm.Ret 
   | "svc" -> Arm.Svc

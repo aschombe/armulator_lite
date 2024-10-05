@@ -41,6 +41,12 @@ let mem_store (m: Mach.t) (v: Arm.data) (o: Arm.operand) (rgs: int64 array) (mem
   let str_addr = (mem_store_address m o rgs) in 
   data_into_memory str_addr v mem
 
+let update_flags (result: Int64_overflow.t) : Mach.flags = 
+  { n = if result.value < 0L then true else false; 
+    z = if result.value = 0L then true else false; 
+    c = result.overflow; 
+    v = result.overflow; }
+
 let step (m: Mach.t) : Mach.t = 
   let insn = Mach.get_insn m m.pc in
   print_endline (Printf.sprintf "+%04d: %s" (Int64.to_int m.pc) (Arm_stringifier.string_of_insn insn));
@@ -68,6 +74,45 @@ let step (m: Mach.t) : Mach.t =
     let addend1 = Decoder.operand_as_int64 m o2 in 
     let addend2 = Decoder.operand_as_int64 m o3 in 
     m.regs.(Mach.reg_index reg) <- Int64.add addend1 addend2;
+    m
+  | (Arm.Adds, [o1; o2; o3]) ->
+    let reg = Decoder.operand_as_register m o1 in 
+    let addend1 = Decoder.operand_as_int64 m o2 in 
+    let addend2 = Decoder.operand_as_int64 m o3 in 
+    let result = Int64_overflow.add addend1 addend2 in 
+    let n_flags = update_flags result in
+    m.flags <- n_flags;
+    m.regs.(Mach.reg_index reg) <- result.value;
+    m
+  | (Arm.Sub, [o1; o2; o3]) -> 
+    let reg = Decoder.operand_as_register m o1 in 
+    let addend1 = Decoder.operand_as_int64 m o2 in 
+    let addend2 = Decoder.operand_as_int64 m o3 in 
+    m.regs.(Mach.reg_index reg) <- Int64.sub addend1 addend2;
+    m
+  | (Arm.Subs, [o1; o2; o3]) ->
+    let reg = Decoder.operand_as_register m o1 in 
+    let addend1 = Decoder.operand_as_int64 m o2 in 
+    let addend2 = Decoder.operand_as_int64 m o3 in 
+    let result = Int64_overflow.sub addend1 addend2 in 
+    let n_flags = update_flags result in
+    m.flags <- n_flags;
+    m.regs.(Mach.reg_index reg) <- result.value;
+    m
+  | (Arm.Mul, [o1; o2; o3]) -> 
+    let reg = Decoder.operand_as_register m o1 in 
+    let addend1 = Decoder.operand_as_int64 m o2 in 
+    let addend2 = Decoder.operand_as_int64 m o3 in 
+    m.regs.(Mach.reg_index reg) <- Int64.mul addend1 addend2;
+    m
+  | (Arm.Muls, [o1; o2; o3]) ->
+    let reg = Decoder.operand_as_register m o1 in 
+    let addend1 = Decoder.operand_as_int64 m o2 in 
+    let addend2 = Decoder.operand_as_int64 m o3 in 
+    let result = Int64_overflow.mul addend1 addend2 in 
+    let n_flags = update_flags result in
+    m.flags <- n_flags;
+    m.regs.(Mach.reg_index reg) <- result.value;
     m
   | (Arm.Bl, [o1]) -> 
     let label_name = Decoder.operand_as_label m o1 in 

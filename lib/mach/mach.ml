@@ -33,7 +33,7 @@ type mach = {
     mutable regs: int64 array;
     mutable pc: int64;
     mutable mem: sbyte array;
-    flags: flags;
+    mutable flags: flags;
 }
 
 type t = mach

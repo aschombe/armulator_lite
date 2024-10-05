@@ -29,6 +29,7 @@ type operand =
     | Offset of offset
 
 type cnd = 
+    | Al (* always, added this as a background thing *)
     | Eq | Ne | Lt | Le | Gt | Ge 
 
 type opcode = 
@@ -69,5 +70,5 @@ type tld =
     | TextDirect of block list
     | DataDirect of block list
 
-(* a complete program contains a .gloabl, .text, and .data section, but we also need to support external symbols *)
+(* a complete program contains a .global, .text, and .data section, but we also need to support external symbols *)
 type prog = tld list

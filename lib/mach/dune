@@ -16,6 +16,6 @@
 (library
   (name emulator)
   (modules emulator)
-  (libraries arm mach decoder))
+  (libraries arm mach decoder int64_overflow))
 
 
