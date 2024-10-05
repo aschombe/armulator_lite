@@ -202,6 +202,46 @@ let step (m: Mach.t) : Mach.t =
     m.flags <- n_flags;
     m.regs.(Mach.reg_index reg) <- result.value;
     m
+  | (Arm.Cmp, [o1; o2]) ->
+    let operand1 = Decoder.operand_as_int64 m o1 in 
+    let operand2 = Decoder.operand_as_int64 m o2 in
+    let result = Int64_overflow.sub operand1 operand2 in 
+    let n_flags = update_flags result in
+    m.flags <- n_flags;
+    m
+  | (Arm.B cnd, [o1]) ->
+    let label_name = Decoder.operand_as_label m o1 in 
+    let label_val = Mach.lookup_label m.info.layout label_name in 
+    let new_addr = Int64.sub (Int64.sub label_val m.info.mem_bot) 8L in (* subtract 8 because step will increment PC *)
+    let do_jump = begin match cnd with 
+      | Al -> true
+      | Eq -> m.flags.z
+      | Ne -> not m.flags.z
+      | Lt -> m.flags.n
+      | Le -> m.flags.n || m.flags.z
+      | Gt -> not m.flags.n && not m.flags.z
+      | Ge -> not m.flags.n || m.flags.z
+    end in 
+    m.pc <- if do_jump then new_addr else m.pc;
+    m
+  | (Arm.Cbz, [o1; o2]) ->
+    let operand1 = Decoder.operand_as_int64 m o1 in 
+    let label_name = Decoder.operand_as_label m o2 in 
+    let label_val = Mach.lookup_label m.info.layout label_name in 
+    let new_addr = Int64.sub (Int64.sub label_val m.info.mem_bot) 8L in (* subtract 8 because step will increment PC *)
+    let result = Int64_overflow.sub operand1 0L in 
+    let n_flags = update_flags result in
+    m.flags <- n_flags;
+    if m.flags.z then (m.pc <- new_addr; m) else m
+  | (Arm.Cbnz, [o1; o2]) ->
+    let operand1 = Decoder.operand_as_int64 m o1 in 
+    let label_name = Decoder.operand_as_label m o2 in 
+    let label_val = Mach.lookup_label m.info.layout label_name in 
+    let new_addr = Int64.sub (Int64.sub label_val m.info.mem_bot) 8L in (* subtract 8 because step will increment PC *)
+    let result = Int64_overflow.sub operand1 0L in 
+    let n_flags = update_flags result in
+    m.flags <- n_flags;
+    if not m.flags.z then (m.pc <- new_addr; m) else m
   | (Arm.Bl, [o1]) -> 
     let label_name = Decoder.operand_as_label m o1 in 
     let label_val = Mach.lookup_label m.info.layout label_name in 
