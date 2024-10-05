@@ -9,6 +9,11 @@
   (libraries num))
 
 (library
+  (name system)
+  (modules system)
+  (libraries arm mach decoder))
+
+(library
   (name decoder)
   (modules decoder)
   (libraries arm mach))
