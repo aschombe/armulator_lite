@@ -19,7 +19,7 @@ let syscall_write (m: Mach.t) (_fd: int64) (buf: int64) (count: int64) : int64 =
   ) bytes; List.length bytes |> Int64.of_int 
 
 let syscall_exit (m: Mach.t) (status: int64) : int64 =
-  m.pc <- Int64.sub 0xfdeadL 8L;
+  m.pc <- m.info.exit_val;
   status 
 
 let execute_syscall (m: Mach.t) : Mach.t =

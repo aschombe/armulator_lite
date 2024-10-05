@@ -218,7 +218,7 @@ let step (m: Mach.t) : Mach.t =
   | (Arm.Ret, []) -> 
     m.pc <- m.regs.(Mach.reg_index Arm.LR);
     m
-  | (Arm.Svc, [o1]) -> (* todo: system.ml? *)
+  | (Arm.Svc, [o1]) ->
     let _ = Decoder.operand_as_int64 m o1 in (* call for error checking, o1 is ignored by the cpu *)
     System.execute_syscall m
   | _ -> Mach.mach_error m (Arm_stringifier.string_of_insn insn) "Unexpected instruction"
