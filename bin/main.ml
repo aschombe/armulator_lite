@@ -10,10 +10,10 @@
   entry_label = "_start" *)
 
 let debug = ref false 
-let validate = ref false 
-let write_arm = ref false 
+let debugger = ref false
 let print_ast = ref false
 let print_machine_state = ref false
+let print_machine_info = ref false
 let input_file = ref "" 
 let output_file = ref ""
 
@@ -52,22 +52,21 @@ let main lines =
   if !output_file <> "" then write_file !output_file (Arm_stringifier.string_of_prog prog);
 
   let _stringified = Arm_stringifier.ast_string_of_prog prog in 
-  let m = Mach.init prog (Some(!mem_bot |> Int64.of_int)) (Some(!mem_size)) (Some(!exit_val |> Int64.of_int)) (Some(!entry_label)) in
-  Mach.print_machine_info m;
-  Mach.print_machine_state m;
+  let m = Mach.init prog (Some(!debugger)) (Some(!print_machine_state)) (Some(!mem_bot |> Int64.of_int)) (Some(!mem_size)) (Some(!exit_val |> Int64.of_int)) (Some(!entry_label)) in
+  if !print_machine_info then Mach.print_machine_info m;
+  if !print_machine_state then Mach.print_machine_state m;
   if !debug then _debug lines; 
   if !print_ast then print_endline (Arm_stringifier.ast_string_of_prog prog);
-  if !validate then () else Emulator.run m
+  Emulator.run m
 
 
 let args =
-  [ ("--debug", Arg.Set debug, "Print debug information");
-    ("--print-ast", Arg.Set print_ast, "Print the AST");
-    ("--print-machine-state", Arg.Set print_machine_state, "Print the machine state");
-    ("--validate-only", Arg.Set validate, "Validate the input file");
-    ("--write-arm", Arg.Set write_arm, "Write the ARM assembly to a file");
+  [ ("--debug-info", Arg.Set debug, "Print debug information");
+    ("--print-ast", Arg.Set print_ast, "Print the AST of the assembly program");
+    ("--print-mach-state", Arg.Set print_machine_state, "Print the machine state");
+    ("--print-mach-info", Arg.Set print_machine_info, "Print the machine starting information");
+    ("--debugger", Arg.Set debugger, "Enable the emulator debugger");
     ("--file", Arg.Set_string input_file, "Input assembly file");
-    ("--out", Arg.Set_string output_file, "Output assembly file");
     ("--base-addr", Arg.Set_int (mem_bot), "Base memory address");
     ("--stack-size", Arg.Set_int (mem_size), "Program stack size");
     ("--exit-val", Arg.Set_int (exit_val), "End program when pc is this value");
@@ -76,7 +75,5 @@ let args =
 
 let () = 
   Arg.parse args (fun _ -> ()) "Usage: ./arml [options]";
-  print_endline !output_file;
-  print_endline !input_file;
   let lines = read_file !input_file in 
   main lines

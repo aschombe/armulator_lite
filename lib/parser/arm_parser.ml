@@ -482,7 +482,7 @@ let parse_ddef ((ln, line) : code_line) (tokens : string list) : Arm.data =
     | ".dword", _ -> parse_quad_arr (ln, line) (List.tl tokens)
     | ".byte", 1 -> parse_byte (ln, line) (List.tl tokens) 
     | ".byte", _ -> parse_byte_arr (ln, line) (List.tl tokens) 
-    | ".string", _ -> parse_string (ln, line) (List.tl tokens) 
+    | ".string", _ -> parse_asciz (ln, line) (List.tl tokens) 
     | ".asciz", _ -> parse_asciz (ln, line) (List.tl tokens) 
     | ".word", 1 -> parse_word (ln, line) (List.tl tokens) 
     | ".word", _ -> parse_word_arr (ln, line) (List.tl tokens) 

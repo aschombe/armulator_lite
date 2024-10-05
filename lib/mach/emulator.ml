@@ -16,8 +16,8 @@ let update_flags (result: Int64_overflow.t) : Mach.flags =
 
 let step (m: Mach.t) : Mach.t = 
   let insn = Mach.get_insn m m.pc in
-  print_endline (Printf.sprintf "+%04d: %s" (Int64.to_int m.pc) (Arm_stringifier.string_of_insn insn));
-  (*Mach.print_machine_state m;*)
+  if m.opts.print_machine_state then Mach.print_machine_state m;
+  if m.opts.print_machine_state then print_endline (Printf.sprintf "+%04d: %s" (Int64.to_int m.pc) (Arm_stringifier.string_of_insn insn));
   match insn with
   | (Arm.Mov, [o1; o2]) ->
     let reg = Decoder.operand_as_register m o1 in
@@ -231,7 +231,7 @@ let step (m: Mach.t) : Mach.t =
 let run (m: Mach.t) : unit = 
   let rec loop (m: Mach.t) : unit =
     let m' = step m in 
-    if Int64.equal m'.pc m'.info.exit_val || Int64.equal m'.regs.(Mach.reg_index Arm.SP) m'.info.exit_val then (Mach.print_machine_state m; print_endline "DONE") else
+    if Int64.equal m'.pc m'.info.exit_val || Int64.equal m'.regs.(Mach.reg_index Arm.SP) m'.info.exit_val then (print_endline "__emulator_stop\n"; Mach.print_machine_state m) else
       (m'.pc <- (Int64.add m'.pc 8L); loop m')
-  in print_endline "__emulator_start"; loop m 
+  in print_endline "\n__emulator_start"; loop m 
 

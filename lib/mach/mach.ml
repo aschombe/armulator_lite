@@ -28,7 +28,13 @@ type mach_info = {
   layout: (string * int64) list;
 }
 
+type mach_opts = {
+  debugger: bool;
+  print_machine_state: bool;
+}
+
 type mach = {
+    opts: mach_opts;
     info: mach_info;
     mutable regs: int64 array;
     mutable pc: int64;
@@ -211,13 +217,19 @@ let print_sbyte_array (mem: sbyte array) (max_rows: int) : unit =
       end
   ) mem
 
-let init (prog: Arm.prog) (mem_bot: int64 option) (mem_size: int option) (exit_val: int64 option) (entry_label: string option) : mach = 
+let init (prog: Arm.prog) (debugger: bool option) (print_machine_state: bool option) (mem_bot: int64 option) (mem_size: int option) (exit_val: int64 option) (entry_label: string option) : mach = 
+  let u_debugger = match debugger with | Some x -> x | None -> false in
+  let u_print_machine_state = match print_machine_state with | Some x -> x | None -> false in
   let u_mem_bot = match mem_bot with | Some x -> x | None -> 0x400000L in 
   let u_mem_size = match mem_size with | Some x -> x | None -> 0x10000 in 
   let u_mem_top = Int64.add u_mem_bot (u_mem_size |> Int64.of_int) in 
   let u_exit_val = match exit_val with | Some x -> x | None -> 0xfdeadL in 
   let nregs = 32 in 
   let u_entry_label = match entry_label with | Some x -> x | None -> "_start" in
+  let mopts = {
+    debugger = u_debugger;
+    print_machine_state = u_print_machine_state;
+  } in
   let minfo = {
     mem_bot = u_mem_bot;
     mem_size = u_mem_size |> Int64.of_int;
@@ -230,9 +242,8 @@ let init (prog: Arm.prog) (mem_bot: int64 option) (mem_size: int option) (exit_v
   let program_bytes = build_program prog |> Array.of_list in
   let mem = Array.make u_mem_size InsFill in 
   Array.blit program_bytes 0 mem 0 (Array.length program_bytes);
-  print_sbyte_array mem 15;
   let regs = Array.make nregs 0L in
-  let tmp_mach = { info = minfo; regs; pc = 0L; mem; flags = { n = false; z = false; c = false; v = false; } } in 
+  let tmp_mach = { opts = mopts; info = minfo; regs; pc = 0L; mem; flags = { n = false; z = false; c = false; v = false; } } in 
   let rec get_entry_addr (map: (string * int64) list) : int64 =
     match map with
     | [] -> mach_error tmp_mach u_entry_label "Entry point not defined"
@@ -241,7 +252,7 @@ let init (prog: Arm.prog) (mem_bot: int64 option) (mem_size: int option) (exit_v
   let layout = gen_layout tmp_mach prog in
   regs.(reg_index Arm.LR) <- u_exit_val;
   regs.(reg_index Arm.SP) <- u_mem_top;
-  let m = { info = { minfo with layout = layout; entry = (u_entry_label, get_entry_addr layout) };
+  let m = { opts = mopts; info = { minfo with layout = layout; entry = (u_entry_label, get_entry_addr layout) };
     regs = regs;
     pc = (get_entry_addr layout);
     mem = mem;
@@ -268,9 +279,9 @@ let print_machine_state (m: mach) : unit =
   let c_flag = "n -> " ^ (Bool.to_string m.flags.c) in 
   let v_flag = "n -> " ^ (Bool.to_string m.flags.v) in 
   let flags_string = n_flag ^ "; " ^ z_flag ^ "; " ^ c_flag ^ "; " ^ v_flag in
-  print_endline ("regs = [" ^ regs_string ^ "]");
-  print_endline ("pc = " ^ (Int64.to_string m.pc));
-  print_endline ("flags = {" ^ flags_string ^ "}")
+  print_endline ("\tregs = [" ^ regs_string ^ "]");
+  print_endline ("\tpc = " ^ (Int64.to_string m.pc));
+  print_endline ("\tflags = {" ^ flags_string ^ "}")
 
 (* default machine has
  mem_bot = 0x400000L
