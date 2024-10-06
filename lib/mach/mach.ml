@@ -302,9 +302,9 @@ let print_machine_pc (m: mach) : unit =
   print_endline ("\tpc = " ^ (Int64.to_string m.pc))
 let print_machine_flags (m: mach) : unit =
   let n_flag = "n -> " ^ (Bool.to_string m.flags.n) in 
-  let z_flag = "n -> " ^ (Bool.to_string m.flags.z) in 
-  let c_flag = "n -> " ^ (Bool.to_string m.flags.c) in 
-  let v_flag = "n -> " ^ (Bool.to_string m.flags.v) in 
+  let z_flag = "z -> " ^ (Bool.to_string m.flags.z) in 
+  let c_flag = "c -> " ^ (Bool.to_string m.flags.c) in 
+  let v_flag = "v -> " ^ (Bool.to_string m.flags.v) in 
   let flags_string = n_flag ^ "; " ^ z_flag ^ "; " ^ c_flag ^ "; " ^ v_flag in
   print_endline ("\tflags = {" ^ flags_string ^ "}")
 

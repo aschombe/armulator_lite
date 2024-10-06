@@ -52,6 +52,7 @@ let main lines =
   if !output_file <> "" then write_file !output_file (Arm_stringifier.string_of_prog prog);
 
   let _stringified = Arm_stringifier.ast_string_of_prog prog in 
+  (if !debugger then print_machine_info := true; print_machine_state := true);
   let m = Mach.init prog (Some(!debugger)) (Some(!print_machine_state)) (Some(!mem_bot |> Int64.of_int)) (Some(!mem_size)) (Some(!exit_val |> Int64.of_int)) (Some(!entry_label)) in
   if !print_machine_info then Mach.print_machine_info m;
   if !print_machine_state then Mach.print_machine_state m;
@@ -65,7 +66,7 @@ let args =
     ("--print-ast", Arg.Set print_ast, "Print the AST of the assembly program");
     ("--print-mach-state", Arg.Set print_machine_state, "Print the machine state");
     ("--print-mach-info", Arg.Set print_machine_info, "Print the machine starting information");
-    ("--debugger", Arg.Set debugger, "Enable the emulator debugger");
+    ("--debugger", Arg.Set debugger, "Enable the emulator debugger (implies all --print-mach flags)");
     ("--file", Arg.Set_string input_file, "Input assembly file");
     ("--base-addr", Arg.Set_int (mem_bot), "Base memory address");
     ("--stack-size", Arg.Set_int (mem_size), "Program stack size");
