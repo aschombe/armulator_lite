@@ -85,7 +85,7 @@ let string_of_reg = function
     | W19 -> "w19" | W20 -> "w20" | W21 -> "w21" 
     | W22 -> "w22" | W23 -> "w23" | W24 -> "w24" 
     | W25 -> "w25" | W26 -> "w26" | W27 -> "w27"
-    | W28 -> "w28" | W29 -> "w29" | W30 -> "w30"
+    | W28 -> "w28" | W29 -> "w29" | W30 -> "w30" | W31 -> "w31"
 
 let ast_string_of_reg (r : reg) : string =
     let uppercase_reg = String.uppercase_ascii (string_of_reg r) in 
@@ -97,12 +97,14 @@ let string_of_operand = function
     | Offset(Ind1 i) -> "[" ^ (string_of_imm i) ^ "]"
     | Offset(Ind2 r) -> "[" ^ (string_of_reg r) ^ "]"
     | Offset(Ind3 (r, i)) -> "[" ^ (string_of_reg r) ^ ", " ^ (string_of_imm i) ^ "]"
+    | Offset(Ind4 (r, r2)) -> "[" ^ (string_of_reg r) ^ ", " ^ (string_of_reg r2) ^ "]"
 let ast_string_of_operand = function
     | Imm i -> "Arm.Imm(" ^ (ast_string_of_imm i) ^ ")"
     | Reg r -> "Arm.Reg(" ^ (ast_string_of_reg r) ^ ")"
     | Offset(Ind1 i) -> "Arm.Offset(Arm.Ind1(Arm.Imm(" ^ (ast_string_of_imm i) ^ ")))"
     | Offset(Ind2 r) -> "Arm.Offset(Arm.Ind2(" ^ (ast_string_of_reg r) ^ "))"
     | Offset(Ind3 (r, i)) -> "Arm.Offset(Arm.Ind3(" ^ (ast_string_of_reg r) ^ ", Arm.Imm(" ^ (ast_string_of_imm i) ^ ")))"
+    | Offset(Ind4 (r, r2)) -> "Arm.Offset(Arm.Ind3(" ^ (ast_string_of_reg r) ^ ", " ^ (ast_string_of_reg r2) ^ "))"
 
 let string_of_insn (op, ops) =
     (string_of_opcode op) ^ " " ^ (String.concat ", " (List.map string_of_operand ops))

@@ -266,7 +266,7 @@ let register_of_string ((ln, insn) : code_line) (reg : string) : Arm.reg =
   | "w18" -> Arm.W18 | "w19" -> Arm.W19 | "w20" -> Arm.W20 | "w21" -> Arm.W21 
   | "w22" -> Arm.W22 | "w23" -> Arm.W23 | "w24" -> Arm.W24 | "w25" -> Arm.W25 
   | "w26" -> Arm.W26 | "w27" -> Arm.W27 | "w28" -> Arm.W28 | "w29" -> Arm.W29 
-  | "w30" -> Arm.W30 
+  | "w30" -> Arm.W30 | "w31" -> Arm.W31
   | _ -> arm_error ln insn reg "Invalid lower register"
 
 let is_not_register (r : string) : bool = 
@@ -294,7 +294,10 @@ let offset_of_string ((ln, insn) : code_line) (offset : string list) : Arm.offse
   else 
     let reg = List.nth offset 0 in
     let imm = List.nth offset 1 in
-    Arm.Ind3(register_of_string (ln, insn) reg, imm_of_string (ln, insn) imm)
+    if is_number imm then 
+      Arm.Ind3(register_of_string (ln, insn) reg, imm_of_string (ln, insn) imm)
+    else 
+      Arm.Ind4(register_of_string (ln, insn) reg, register_of_string (ln, insn) imm)
 
 let operand_of_string ((ln, insn) : code_line) (operand : string) : Arm.operand = 
   if is_number operand || is_not_register operand then 

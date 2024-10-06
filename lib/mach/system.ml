@@ -27,6 +27,9 @@ let execute_syscall (m: Mach.t) : Mach.t =
   let arg0 = m.regs.(Mach.reg_index X0) in 
   let arg1 = m.regs.(Mach.reg_index X1) in 
   let arg2 = m.regs.(Mach.reg_index X2) in 
+  let _arg3 = m.regs.(Mach.reg_index X3) in 
+  let _arg4 = m.regs.(Mach.reg_index X4) in
+  let _arg5 = m.regs.(Mach.reg_index X5) in 
   match syscall_exec with 
   | SysRead -> let result = syscall_read m arg0 arg1 arg2 in m.regs.(Mach.reg_index X0) <- result; m
   | SysWrite -> let result = syscall_write m arg0 arg1 arg2 in m.regs.(Mach.reg_index X0) <- result; m
@@ -72,11 +75,13 @@ let execute_extern_function (m: Mach.t) (lbl: string) : Mach.t =
   let arg2 = m.regs.(Mach.reg_index X2) in 
   let arg3 = m.regs.(Mach.reg_index X3) in 
   let arg4 = m.regs.(Mach.reg_index X4) in 
-  let arg5 = m.regs.(Mach.reg_index X5) in 
+  let arg5 = m.regs.(Mach.reg_index X5) in
+  let arg6 = m.regs.(Mach.reg_index X6) in 
+  let arg7 = m.regs.(Mach.reg_index X7) in 
   match lbl with 
   | "printf" -> 
     let str = Memory.read_to_null_terminator arg0 m.mem |> Mach.string_of_sbytes in 
-    clib_printf m str [arg1; arg2; arg3; arg4; arg5];
+    clib_printf m str [arg1; arg2; arg3; arg4; arg5; arg6; arg7];
     m
   | "scanf" -> m 
   | _ -> Mach.mach_error m (lbl) "Unimplemented external function"

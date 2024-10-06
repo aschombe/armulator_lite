@@ -28,6 +28,16 @@ let rec read_bytes (addr: int64) (count: int64) (m: Mach.sbyte array) : Mach.sby
   | 1L -> [read_at addr m]
   | _ ->  (read_bytes addr (Int64.sub count 1L) m) @ [read_at (Int64.add addr (Int64.sub count 1L)) m]
 
+let rec write_bytes (addr: int64) (count: int64) (data: Mach.sbyte list) (m: Mach.sbyte array) : Mach.sbyte array =
+  match count, data with
+  | 1L, [byte] ->
+      m.(Int64.to_int addr) <- byte; 
+      m
+  | _, byte::rest ->
+      m.(Int64.to_int addr) <- byte;
+      write_bytes (Int64.add addr 1L) (Int64.sub count 1L) rest m
+  | _, [] -> m
+  
 let rec read_to_null_terminator (addr: int64) (m: Mach.sbyte array) : Mach.sbyte list =
   let byte = read_at addr m in
   match byte with

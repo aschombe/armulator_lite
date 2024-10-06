@@ -35,6 +35,24 @@ let step (m: Mach.t) : Mach.t =
     let data = Memory.read_bytes load_addr 8L m.mem |> Mach.int64_of_sbytes in 
     m.regs.(Mach.reg_index reg) <- data;
     m
+  | (Arm.Ldrb, [o1; o2]) -> 
+    let reg = Decoder.operand_as_register m o1 in
+    let load_addr = Decoder.operand_as_load_addr m o2 in
+    let data = Memory.read_bytes load_addr 1L m.mem |> Mach.int64_of_sbytes in 
+    m.regs.(Mach.reg_index reg) <- data;
+    m
+  | (Arm.Str, [o1; o2]) ->
+    let reg = Decoder.operand_as_int64 m o1 in
+    let load_addr = Decoder.operand_as_load_addr m o2 in
+    let data = Memory.write_bytes load_addr 8L (Mach.sbytes_of_int64 reg) m.mem in 
+    m.mem <- data;
+    m
+  | (Arm.Strb, [o1; o2]) ->
+    let reg = Decoder.operand_as_int64 m o1 in
+    let load_addr = Decoder.operand_as_load_addr m o2 in
+    let data = Memory.write_bytes load_addr 1L (Mach.sbytes_of_int64 reg) m.mem in 
+    m.mem <- data;
+    m
   | (Arm.Add, [o1; o2; o3]) -> 
     let reg = Decoder.operand_as_register m o1 in 
     let operand1 = Decoder.operand_as_int64 m o2 in 
@@ -286,6 +304,13 @@ let debug (m: Mach.t) : unit =
         | _ -> Printf.printf "invalid command \"%s\"\n%!" (String.concat " " broken); loop m steps
       with _ ->
         Printf.printf "invalid arg \"%s\" (use \"info\", \"regs\", \"pc\", \"flags\" or \"state\")\n%!" (String.concat " " broken); loop m steps
+    end
+    | "h" | "help" -> begin 
+      Printf.printf "s|step -> execute the current instruction\n";
+      Printf.printf "bs|backstep -> go back to the previous machine state\n";
+      Printf.printf "r|register <xR> <val> -> set the register <xR> to <val>\n";
+      Printf.printf "sh|show <info/state/regs/flags/pc> -> show machine/state information\n";
+      Printf.printf "h|help -> show this message\n";
     end
     | _ -> (Printf.printf "unknown command \"%s\"\n%!" command; loop m steps)
   in loop m []

@@ -76,7 +76,7 @@ let reg_index = function
   | Arm.X18 | Arm.W18 -> 18 | Arm.X19 | Arm.W19 -> 19 | Arm.X20 | Arm.W20 -> 20 | Arm.X21 | Arm.W21 -> 21 
   | Arm.X22 | Arm.W22 -> 22 | Arm.X23 | Arm.W23 -> 23 | Arm.X24 | Arm.W24 -> 24 | Arm.X25 | Arm.W25 -> 25 
   | Arm.X26 | Arm.W26 -> 26 | Arm.X27 | Arm.W27 -> 27 | Arm.X28 | Arm.W28 -> 28 | Arm.SP | Arm.W29 -> 29
-  | Arm.XZR -> 31 | Arm.LR | Arm.W30 -> 30 
+  | Arm.XZR | Arm.W31 -> 31 | Arm.LR | Arm.W30 -> 30
 
 let map_addr (m: mach) (addr: int64) : int = 
   let addr = Int64.add addr m.info.mem_bot in
