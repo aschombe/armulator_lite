@@ -261,34 +261,60 @@ let debug (m: Mach.t) : unit =
   let dbg_step (m: Mach.t) : Mach.t = 
     let m' = step m in 
     if Int64.equal m'.pc m'.info.exit_val || Int64.equal m'.regs.(Mach.reg_index Arm.SP) m'.info.exit_val then (print_endline "__emulator_stop\n"; Mach.print_machine_state m'; m') else
-      (m'.pc <- (Int64.add m'.pc 8L); m') in 
-  let rec loop (m: Mach.t) (steps: Mach.t list) : unit =
+      (m'.pc <- (Int64.add m'.pc 8L); m') in
+  let rec loop (m: Mach.t) (steps: Mach.t list) (last_command: string): unit =
     Printf.printf "(dbg) %!";
     let broken = In_channel.input_line stdin |> unwrap_str |> String.split_on_char ' ' in 
-    let command = List.hd broken in 
-    let args = List.tl broken in
+    let lc_broken = String.split_on_char ' ' last_command in
+    let in_command = List.hd broken in 
+    let in_args = List.tl broken in
+    let (command, args) = if in_command = "" then (List.hd lc_broken, List.tl lc_broken) else (in_command, in_args) in
+    let executed = (String.concat " " (command :: args)) in
     match command with 
     | "s" | "step" -> begin
       let copied = Mach.copy m in
-      let m' = dbg_step m in loop m' (copied :: steps)
+      let m' = dbg_step m in loop m' (copied :: steps) executed
     end
     | "bs" | "backstep" -> begin
       if List.length steps > 0 then 
         let prev_state = List.hd steps in 
         let other_steps = List.tl steps in 
         Printf.printf "+%04d: %s\n" (prev_state.pc |> Int64.to_int) (Mach.get_insn prev_state prev_state.pc |> Arm_stringifier.string_of_insn);
-        loop prev_state other_steps
+        loop prev_state other_steps executed
       else 
-        Printf.printf "no previous steps\n%!"; loop m steps
+        Printf.printf "no previous steps\n%!"; loop m steps executed
     end
     | "r" | "register" -> begin
       try 
         let reg = Arm_parser.register_of_string (0, String.concat " " broken) (List.nth args 0) in
         let rval = Arm_parser.token_to_int64 (0, String.concat " " broken) (List.nth args 1) in 
         m.regs.(Mach.reg_index reg) <- rval;
-        loop m steps
+        loop m steps executed
       with _ -> 
-        Printf.printf "invalid command \"%s\"\n%!" (String.concat " " broken); loop m steps
+        Printf.printf "invalid command \"%s\"\n%!" executed; loop m steps executed
+    end
+    | "m" | "memory" -> begin 
+      try 
+        let reg = Arm_parser.register_of_string (0, String.concat " " broken) (List.nth args 0) in
+        let address = m.regs.(Mach.reg_index reg) in 
+        if List.length args > 2 then begin
+          let mval = Arm_parser.token_to_int64 (0, String.concat " " broken) (List.nth args 2) in 
+          let count = Arm_parser.token_to_int64 (0, String.concat " " broken) (List.nth args 1) in 
+          let written = Memory.write_bytes address count (Mach.sbytes_of_int64 mval) m.mem in 
+          m.mem <- written;
+          let sbytes = Memory.read_bytes address count m.mem in 
+          let bytearr = Mach.byte_array_of_sbytes sbytes |> List.map (fun c -> Char.code c |> Printf.sprintf "0x%08x") |> String.concat ", " in
+          Printf.printf "[%s]\n" bytearr;
+          loop m steps executed
+        end else begin 
+          let count = Arm_parser.token_to_int64 (0, String.concat " " broken) (List.nth args 1) in 
+          let sbytes = Memory.read_bytes address count m.mem in 
+          let bytearr = Mach.byte_array_of_sbytes sbytes |> List.map (fun c -> Char.code c |> Printf.sprintf "0x%08x") |> String.concat ", " in
+          Printf.printf "[%s]\n" bytearr;
+          loop m steps executed
+        end
+      with _ -> 
+        Printf.printf "invalid command \"%s\"\n%!" executed; loop m steps executed
     end
     | "q" | "quit" -> begin 
       Printf.printf "terminated via command\n%!"; exit 0
@@ -296,21 +322,22 @@ let debug (m: Mach.t) : unit =
     | "sh" | "show" -> begin 
       try 
         match (List.nth args 0) with 
-        | "info" -> Mach.print_machine_info m; loop m steps
-        | "state" -> Mach.print_machine_state m; loop m steps
-        | "regs" -> Mach.print_machine_regs m; loop m steps
-        | "flags" -> Mach.print_machine_flags m; loop m steps 
-        | "pc" -> Mach.print_machine_pc m; loop m steps
-        | _ -> Printf.printf "invalid command \"%s\"\n%!" (String.concat " " broken); loop m steps
+        | "info" -> Mach.print_machine_info m; loop m steps executed
+        | "state" -> Mach.print_machine_state m; loop m steps executed
+        | "regs" -> Mach.print_machine_regs m; loop m steps executed
+        | "flags" -> Mach.print_machine_flags m; loop m steps executed
+        | "pc" -> Mach.print_machine_pc m; loop m steps executed
+        | _ -> Printf.printf "invalid command \"%s\"\n%!" executed; loop m steps executed
       with _ ->
-        Printf.printf "invalid arg \"%s\" (use \"info\", \"regs\", \"pc\", \"flags\" or \"state\")\n%!" (String.concat " " broken); loop m steps
+        Printf.printf "invalid arg \"%s\" (use \"info\", \"regs\", \"pc\", \"flags\" or \"state\")\n%!" executed; loop m steps executed
     end
     | "h" | "help" -> begin 
       Printf.printf "s|step -> execute the current instruction\n";
       Printf.printf "bs|backstep -> go back to the previous machine state\n";
       Printf.printf "r|register <xR> <val> -> set the register <xR> to <val>\n";
+      Printf.printf "m|memory <xR> [count] [val] -> prints or sets the data at the address to val";
       Printf.printf "sh|show <info/state/regs/flags/pc> -> show machine/state information\n";
       Printf.printf "h|help -> show this message\n";
     end
-    | _ -> (Printf.printf "unknown command \"%s\"\n%!" command; loop m steps)
-  in loop m []
+    | _ -> (Printf.printf "unknown command \"%s\"\n%!" command; loop m steps executed)
+  in loop m [] ""

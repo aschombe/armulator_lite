@@ -193,6 +193,12 @@ let rec string_of_sbytes (bs: sbyte list) : string =
   | Byte c::t -> (String.make 1 c) ^ string_of_sbytes t
   | _ -> ""
 
+let rec byte_array_of_sbytes (bs: sbyte list) : char list = 
+  match bs with 
+  | [] -> []
+  | Byte c::t -> c :: byte_array_of_sbytes t
+  | _::t -> '\000' :: byte_array_of_sbytes t
+
 let build_program (prog: Arm.prog) : sbyte list =
   let build_insn (insn: Arm.insn) : sbyte list = [Insn insn; InsFill; InsFill; InsFill; InsFill; InsFill; InsFill; InsFill] in
   let build_global_def (label: Arm.lbl) : sbyte list = [GlobalDef label; InsFill; InsFill; InsFill; InsFill; InsFill; InsFill; InsFill] in
@@ -296,7 +302,9 @@ let print_machine_info (m: mach) : unit =
   print_endline ("layout = [\n" ^ layout_str ^ "\n]")
 
 let print_machine_regs (m: mach) : unit = 
-  let regs_string = Array.map Int64.to_string m.regs |> Array.to_list |> String.concat "; " in
+  let regs_string = Array.map Int64.to_string m.regs |> Array.to_list |> List.mapi (fun i v -> begin 
+    if i mod 8 = 0 then "x" ^ (string_of_int i) ^ "=" ^ v ^ "\n\t" else "x" ^ (string_of_int i) ^ "=" ^ v 
+  end) |> String.concat "; " in
   print_endline ("\tregs = [" ^ regs_string ^ "]")
 let print_machine_pc (m: mach) : unit = 
   print_endline ("\tpc = " ^ (Int64.to_string m.pc))
