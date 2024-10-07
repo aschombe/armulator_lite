@@ -12,7 +12,7 @@
  (libraries arm mach emulator arm_parser arm_stringifier plugins))
 
 (executable
- (name my_plugin)
- (modules my_plugin)
+ (name plagiarism)
+ (modules plagiarism)
  (modes plugin)
  (libraries arm mach emulator arm_parser arm_stringifier plugins))

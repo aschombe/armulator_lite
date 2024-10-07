@@ -246,10 +246,19 @@ let step (m: Mach.t) : Mach.t =
   | _ -> Mach.mach_error m (Arm_stringifier.string_of_insn insn) "Unexpected instruction"
 
 let run (m: Mach.t) : unit = 
+  let plugins = Plugins.get_loaded_plugins () in
   let rec loop (m: Mach.t) : unit =
     let m' = step m in 
-    if Int64.equal m'.pc m'.info.exit_val || Int64.equal m'.regs.(Mach.reg_index Arm.SP) m'.info.exit_val then (print_endline "__emulator_stop\n"; Mach.print_machine_state m) else
-      (m'.pc <- (Int64.add m'.pc 8L); loop m')
+    if Int64.equal m'.pc m'.info.exit_val || Int64.equal m'.regs.(Mach.reg_index Arm.SP) m'.info.exit_val then (
+      let m'' = List.fold_left (fun m pl -> let module M = (val pl : Plugins.EMULATOR_PLUGIN) in M.on_execute m) m' plugins in
+      print_endline "__emulator_stop\n"; 
+      Mach.print_machine_state m''
+    ) 
+    else (
+      let m'' = List.fold_left (fun m pl -> let module M = (val pl : Plugins.EMULATOR_PLUGIN) in M.on_execute m) m' plugins in
+      m''.pc <- (Int64.add m''.pc 8L);
+      loop m''
+    )
   in print_endline "\n__emulator_start"; loop m 
 
 let unwrap_str s =

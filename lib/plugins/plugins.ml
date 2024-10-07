@@ -1,7 +1,14 @@
+type plugin_event = 
+| PreExecution
+| PostExecution 
+| OnLoad
+
 module type EMULATOR_PLUGIN = sig 
   val name : string
   val options : Cmd_parser.arg list
-  val on_load : unit -> unit
+  val on_load : Mach.t -> Mach.t
+
+  val on_execute : Mach.t -> Mach.t
 end
 
 let loaded_plugins : (module EMULATOR_PLUGIN) list ref = ref []

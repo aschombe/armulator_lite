@@ -48,13 +48,14 @@ let _debug lines =
   print_endline "Data Directives:";
   List.iter (fun codelines -> Arm_parser.print_code_lines codelines) data_directives
 
-let main (_plugins: (module Plugins.EMULATOR_PLUGIN) list) (lines: Arm_parser.code_line list) =
+let main (plugins: (module Plugins.EMULATOR_PLUGIN) list) (lines: Arm_parser.code_line list) =
   let prog = Arm_parser.parse_assembly lines in
   if !output_file <> "" then write_file !output_file (Arm_stringifier.string_of_prog prog);
 
   let _stringified = Arm_stringifier.ast_string_of_prog prog in 
-  (if !debugger then print_machine_info := true; print_machine_state := true);
+  (if !debugger then (print_machine_info := true; print_machine_state := true));
   let m = Mach.init prog (Some(!debugger)) (Some(!print_machine_state)) (Some(!mem_bot |> Int64.of_int)) (Some(!mem_size)) (Some(!exit_val |> Int64.of_int)) (Some(!entry_label)) in
+  List.iter (fun pl -> let module M = (val pl : Plugins.EMULATOR_PLUGIN) in Cmd_parser.parse_arguments (Sys.argv |> Array.to_list) M.options; let _ = M.on_load m in ()) plugins; 
   if !print_machine_info then Mach.print_machine_info m;
   if !print_machine_state then Mach.print_machine_state m;
   if !debug then _debug lines; 
@@ -79,9 +80,9 @@ let () =
     ("--print-mach-info", Cmd_parser.Set_bool print_machine_info, "Print the machine starting information");
     ("--debugger", Cmd_parser.Set_bool debugger, "Enable the emulator debugger (implies all --print-mach flags)");
     ("--file", Cmd_parser.Set_string input_file, "Input assembly file");
-    ("--base-addr", Cmd_parser.Set_int (mem_bot), "Base memory address");
-    ("--stack-size", Cmd_parser.Set_int (mem_size), "Program stack size");
-    ("--exit-val", Cmd_parser.Set_int (exit_val), "End program when pc is this value");
+    ("--base-addr", Cmd_parser.Set_int mem_bot, "Base memory address");
+    ("--stack-size", Cmd_parser.Set_int mem_size, "Program stack size");
+    ("--exit-val", Cmd_parser.Set_int exit_val, "End program when pc is this value");
     ("--entry-label", Cmd_parser.Set_string entry_label, "Entry label");
     ("--plugins", Cmd_parser.Set_string plugin_list, "Comma separated list of plugins to load");
     ("--help", Cmd_parser.Usage_msg, "Displays this message");
@@ -90,6 +91,5 @@ let () =
   let plugin_names = (String.split_on_char ',' !plugin_list) |> List.filter (fun n -> not (n = "")) in
   List.iter (fun name -> begin Printf.printf "[plugin_loader] loading '%s'...%!" name; load_plugin (name^".cmxs"); Printf.printf "done.\n%!" end) plugin_names;
   let plugins = Plugins.get_loaded_plugins () in
-  List.iter (fun pl -> let module M = (val pl : Plugins.EMULATOR_PLUGIN) in Cmd_parser.parse_arguments (Sys.argv |> Array.to_list) M.options; M.on_load ()) plugins; 
   let lines = read_file !input_file in 
   main plugins lines
