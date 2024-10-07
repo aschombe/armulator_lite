@@ -3,4 +3,16 @@
  (name main)
  (modules main)
  (promote (until-clean))
- (libraries arm str mach emulator arm_parser arm_stringifier))
+ (libraries dynlink arm str mach emulator arm_parser cmd_parser arm_stringifier plugins))
+
+(executable
+ (name test_plugin)
+ (modules test_plugin)
+ (modes plugin)
+ (libraries arm mach emulator arm_parser arm_stringifier plugins))
+
+(executable
+ (name my_plugin)
+ (modules my_plugin)
+ (modes plugin)
+ (libraries arm mach emulator arm_parser arm_stringifier plugins))

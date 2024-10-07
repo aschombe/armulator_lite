@@ -31,3 +31,6 @@ _opam/
 bin/main.exe
 arml
 node_modules/
+
+# compiled plugins
+test_plugin.cmo

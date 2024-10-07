@@ -1,4 +1,9 @@
 (library
+  (name cmd_parser)
+  (modules cmd_parser)
+  (libraries str))
+
+(library
   (name arm_parser)
   (modules arm_parser)
   (libraries arm str))
