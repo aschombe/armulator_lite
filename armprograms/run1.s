@@ -5,7 +5,10 @@ _start:
     mov x0, 0b1111
     mov x1, 0xdead
     mov x2, 0xbeef
-    ret
+    
+    mov x0, 0
+    mov x8, 93
+    svc 0
 
 .data
 hello_str: .asciz "Hello, World!\n"

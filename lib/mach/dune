@@ -11,7 +11,7 @@
 (library
   (name system)
   (modules system)
-  (libraries arm mach decoder memory))
+  (libraries arm mach decoder memory plugins))
 
 (library
   (name memory)

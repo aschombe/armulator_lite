@@ -33,7 +33,7 @@ let execute_syscall (m: Mach.t) : Mach.t =
   match syscall_exec with 
   | SysRead -> let result = syscall_read m arg0 arg1 arg2 in m.regs.(Mach.reg_index X0) <- result; m
   | SysWrite -> let result = syscall_write m arg0 arg1 arg2 in m.regs.(Mach.reg_index X0) <- result; m
-  | SysExit -> let result = syscall_exit m arg0 in m.regs.(Mach.reg_index X0) <- result; m
+  | SysExit -> let result = syscall_exit m arg0 in m.regs.(Mach.reg_index X0) <- result; let m' = Plugins.execute_plugin_event Plugins.OnExitEvent m in m'
 
 let rec __clib_printf (m: Mach.t) (fmt: char list) (args: int64 list) : unit =
   match fmt, args with

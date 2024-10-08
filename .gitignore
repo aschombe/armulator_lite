@@ -33,4 +33,4 @@ arml
 node_modules/
 
 # closed source plugins
-bin/plagiarism.ml
+

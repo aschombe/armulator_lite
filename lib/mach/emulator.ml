@@ -13,9 +13,9 @@ let update_flags (result: Int64_overflow.t) : Mach.flags =
     c = result.overflow; 
     v = result.overflow; }
 
-let step (m: Mach.t) : Mach.t = 
+let step (m': Mach.t) : Mach.t = 
+  let m = Plugins.execute_plugin_event Plugins.PreExecutionEvent m' in
   let insn = Mach.get_insn m m.pc in
-  if m.opts.print_machine_state then Mach.print_machine_state m;
   if m.opts.print_machine_state then print_endline (Printf.sprintf "+%04d: %s" (Int64.to_int m.pc) (Arm_stringifier.string_of_insn insn));
   match insn with
   | (Arm.Mov, [o1; o2]) ->
@@ -246,16 +246,17 @@ let step (m: Mach.t) : Mach.t =
   | _ -> Mach.mach_error m (Arm_stringifier.string_of_insn insn) "Unexpected instruction"
 
 let run (m: Mach.t) : unit = 
-  let plugins = Plugins.get_loaded_plugins () in
   let rec loop (m: Mach.t) : unit =
-    let m' = step m in 
+    let m' = step m in
+    if m.opts.print_machine_state then Mach.print_machine_state m';
     if Int64.equal m'.pc m'.info.exit_val || Int64.equal m'.regs.(Mach.reg_index Arm.SP) m'.info.exit_val then (
-      let m'' = List.fold_left (fun m pl -> let module M = (val pl : Plugins.EMULATOR_PLUGIN) in M.on_execute m) m' plugins in
+      let m'' = Plugins.execute_plugin_event Plugins.PostExecutionEvent m' in
       print_endline "__emulator_stop\n"; 
-      Mach.print_machine_state m''
+      Mach.print_machine_state m'';
+      let _ = Plugins.execute_plugin_event Plugins.OnUnloadEvent m'' in ()
     ) 
     else (
-      let m'' = List.fold_left (fun m pl -> let module M = (val pl : Plugins.EMULATOR_PLUGIN) in M.on_execute m) m' plugins in
+      let m'' = Plugins.execute_plugin_event Plugins.PostExecutionEvent m' in
       m''.pc <- (Int64.add m''.pc 8L);
       loop m''
     )
@@ -268,7 +269,8 @@ let unwrap_str s =
 
 let debug (m: Mach.t) : unit = 
   let dbg_step (m: Mach.t) : Mach.t = 
-    let m' = step m in 
+    let m' = step m in
+    if m.opts.print_machine_state then Mach.print_machine_state m';
     if Int64.equal m'.pc m'.info.exit_val || Int64.equal m'.regs.(Mach.reg_index Arm.SP) m'.info.exit_val then (print_endline "__emulator_stop\n"; Mach.print_machine_state m'; m') else
       (m'.pc <- (Int64.add m'.pc 8L); m') in
   let rec loop (m: Mach.t) (steps: Mach.t list) (last_command: string): unit =

@@ -11,7 +11,10 @@ module M: Plugins.EMULATOR_PLUGIN = struct
     ("--test-arg", Cmd_parser.Set_string test_arg, "A test argument")
   ]
   let on_load = fun m -> Printf.printf "[test_plugin] now loaded with option '%s'\n" !test_arg; m
-  let on_execute = post_exec
+  let on_unload = fun m -> m
+  let on_exit = fun m -> Printf.printf "[test_plugin] done with option\n"; m
+  let on_pre_execute = fun m -> m
+  let on_post_execute = post_exec
 end
 
 let () = Plugins.append_plugin (module M : Plugins.EMULATOR_PLUGIN)

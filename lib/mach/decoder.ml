@@ -19,6 +19,12 @@ let operand_as_register (m: Mach.t) (op: Arm.operand) : Arm.reg =
   | Arm.Reg r -> r
   | _ -> Mach.mach_error m (Arm_stringifier.string_of_operand op) "Unexpexted register"
 
+
+let operand_as_register_quiet (_m: Mach.t) (op: Arm.operand) : Arm.reg =
+  match op with 
+  | Arm.Reg r -> r
+  | _ -> raise (Mach.Segmentation_fault "")
+
 let operand_as_int64 (m: Mach.t) (op: Arm.operand) : int64 = 
   match op with 
   | Arm.Imm (Lit i) -> i

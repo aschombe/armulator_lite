@@ -11,7 +11,7 @@ _start:
 
     adr x18, vec1 
     adr x19, vec2 
-    adr x30, result 
+    adr x28, result 
     mov x21, 0
     sub x21, x21, 8
     mov x17, 3
@@ -28,12 +28,14 @@ _loop:
     cmp x17, 0
     b.ne _loop
 
-    str x16, [x20, 0]
-    ldr x30, [x20, 0]
+    str x16, [x28, 0]
+    ldr x28, [x28, 0]
+
+    mov x0, 69
 
     adr x0, format 
     adr x1, vec
-    mov x2, x30
+    mov x2, x28
     bl printf
 
     mov x0, 0
