@@ -346,9 +346,9 @@ let debug (m: Mach.t) : unit =
       Printf.printf "s|step -> execute the current instruction\n";
       Printf.printf "bs|backstep -> go back to the previous machine state\n";
       Printf.printf "r|register <xR> <val> -> set the register <xR> to <val>\n";
-      Printf.printf "m|memory <xR> [count] [val] -> prints or sets the data at the address to val";
+      Printf.printf "m|memory <xR> [count] [val] -> prints or sets the data at the address to val\n";
       Printf.printf "sh|show <info/state/regs/flags/pc> -> show machine/state information\n";
       Printf.printf "h|help -> show this message\n";
-    end
+    end; loop m steps executed
     | _ -> (Printf.printf "unknown command \"%s\"\n%!" command; loop m steps executed)
   in loop m [] ""

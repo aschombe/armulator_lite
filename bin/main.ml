@@ -63,7 +63,7 @@ let main (plugins: (module Plugins.EMULATOR_PLUGIN) list) (lines: Arm_parser.cod
   if !debugger then Emulator.debug m else Emulator.run m
 
 let load_plugin (name: string) : unit = 
-  let fname = Dynlink.adapt_filename name in 
+  let fname = Dynlink.adapt_filename ("./plugins/" ^ name ^ ".cmxs") in 
   match Sys.file_exists fname with 
   | true -> 
     begin match Dynlink.loadfile fname with 
@@ -89,7 +89,7 @@ let () =
   ] in
   Cmd_parser.parse_arguments (Sys.argv |> Array.to_list) args;
   let plugin_names = (String.split_on_char ',' !plugin_list) |> List.filter (fun n -> not (n = "")) in
-  List.iter (fun name -> begin Printf.printf "[plugin_loader] loading '%s'...%!" name; load_plugin (name^".cmxs"); Printf.printf "done.\n%!" end) plugin_names;
+  List.iter (fun name -> begin Printf.printf "[plugin_loader] loading '%s'...%!" name; load_plugin name; Printf.printf "done.\n%!" end) plugin_names;
   let plugins = Plugins.get_loaded_plugins () in
   let lines = read_file !input_file in 
   main plugins lines

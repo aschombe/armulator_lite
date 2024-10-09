@@ -44,4 +44,5 @@ let rec parse_arguments (args: string list) (opts: arg list) : unit =
   | o::t when not (is_option o) -> parse_arguments t opts
   | o::v::t when (is_option o) && not (is_option v) -> match_to_spec o v opts opts; parse_arguments (v::t) opts
   | o::v::t when (is_option o) && (is_option v) -> match_to_spec o "true" opts opts; parse_arguments (v::t) opts
+  | o::t when (is_option o) -> match_to_spec o "true" opts opts; parse_arguments t opts
   | _ -> ()

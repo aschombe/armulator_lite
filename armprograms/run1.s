@@ -2,9 +2,12 @@
 
 .text
 _start: 
-    mov x0, 0b1111
-    mov x1, 0xdead
-    mov x2, 0xbeef
+    mov x0, 1
+    adr x1, hello_str 
+    adr x2, hello_len 
+    ldr x2, [x2, 0]
+    mov x8, 64
+    svc 0
     
     mov x0, 0
     mov x8, 93
