@@ -20,7 +20,7 @@ let string_of_arg (a: arg) : string =
   | (n, Set_bool _, desc) -> n ^ ",     \t"^ desc
   | (n, Set_string _, desc) -> n ^ "=<string>,\t"^ desc
   | (n, Set_int _, desc) -> n ^ "=<int>,\t"^ desc
-  | (n, Usage_msg, desc) -> n ^ ",\t"^ desc
+  | (n, Usage_msg, desc) -> n ^ ",     \t"^ desc
 
 let string_of_arglist (opts: arg list) : string =
   List.map (fun arg -> "\t" ^ (string_of_arg arg)) opts |> String.concat "\n"
@@ -35,7 +35,7 @@ let set_argument (f: spec) (v: string) : unit =
 let rec match_to_spec (option: string) (value: string) (opts: arg list) (c_args: arg list) : unit =
   match opts with
   | [] -> ()
-  | (name, Usage_msg, _)::_ when option = name -> Printf.printf "./arml [options]\n%s\n" (string_of_arglist c_args); exit 0
+  | (name, Usage_msg, _)::_ when option = name -> Printf.printf "./arml [options] <file1.s> [file2.s] [file3.s] [files...]\noptions:\n%s\n" (string_of_arglist c_args); exit 0
   | (name, f, _)::t -> if name = option then set_argument f value else match_to_spec option value t c_args
 
 let rec parse_arguments (args: string list) (opts: arg list) : unit =
