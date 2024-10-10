@@ -515,5 +515,9 @@ let parse_assembly (lines : code_line list) : Arm.prog =
   let text_blocks_parsed = Arm.TextDirect(List.map (fun x -> parse_text_block x) text_blocks) in
   let data_directives = List.concat (find_directives lines "data") in
   let data_blocks = find_blocks data_directives in
-  let data_blocks_parsed = Arm.DataDirect(List.map (fun x -> parse_data_block x) data_blocks) in
-  extern_defs @ global_defs @ [text_blocks_parsed] @ [data_blocks_parsed]
+  let data_blocks_parsed : Arm.tld list = 
+    (if List.length (List.nth data_blocks 0) = 0 then 
+      []
+    else 
+      [(Arm.DataDirect(List.map (fun x -> parse_data_block x) data_blocks))]) in
+  extern_defs @ global_defs @ [text_blocks_parsed] @ data_blocks_parsed

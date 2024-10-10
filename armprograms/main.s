@@ -1,6 +1,6 @@
 .global _start
-.extern hello_world
 .extern printf
+.extern hello_world
 
 .text
 _start:

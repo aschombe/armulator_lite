@@ -119,30 +119,17 @@ let validation_error (offset: int64) (highlight : string) (msg : string) : 'a =
   let () = Printf.fprintf Out_channel.stderr "\t%s\n\n" highlighted_line in
   raise (Invalid_layout msg)
 
+let linker_error (highlight: string) (msg: string) : 'a = 
+  let highlighted_line = Str.global_replace (Str.regexp highlight) ("\x1b[1;91m" ^ highlight ^ "\x1b[0m") "Missing label definition!" in
+  let () = Printf.fprintf Out_channel.stderr "\x1b[1;91mLinker error \x1b[0m\x1b[1;97m\x1b[0m:" in
+  let () = Printf.fprintf Out_channel.stderr " %s.\n\n" msg in
+  let () = Printf.fprintf Out_channel.stderr "\t%s\n\n" highlighted_line in
+  raise (Invalid_layout msg)
+
 let rec lookup_label (layout: (string * int64) list) (label: string) : int64 =
   match layout with
   | [] -> raise (Segmentation_fault ("Label '" ^ label ^ "' not found"))
   | (l, offset)::t -> if l = label then offset else lookup_label t label
-
-let rec validate_layout (l: (string * int64) list) : unit =
-  match l with
-  | [] -> ()
-  | (label, offset)::t ->
-    let found = try
-      let matched = lookup_label t label in matched
-    with _ -> -1L in
-    if Int64.equal found (-1L) then 
-      validate_layout t 
-    else 
-      validation_error offset label ("label '" ^ label ^ "' @ " ^ (Printf.sprintf "0x%x" (offset |> Int64.to_int)) ^ " matches with '" ^ label ^ "' @ " ^ (Printf.sprintf "0x%x" (found |> Int64.to_int)))
-
-let remove_defined_external_symbols (sym_list: string list) (l: (string * int64) list) : (string * int64) list = 
-  let rec remove_first_symbol (sym: string) (l: (string * int64) list) : (string * int64) list =
-    match l with 
-    | [] -> []
-    | (label, _)::t when label = sym -> t
-    | (label, offset)::t -> (label, offset) :: remove_first_symbol sym t
-  in List.fold_left (fun a s -> remove_first_symbol s a) l sym_list
 
 let gen_layout (m: mach) (prog: Arm.prog) : (string * int64) list =
   let text_block_layout ({entry=_; lbl=l; asm}: Arm.block) (offset: int64) : (int64 * (string * int64)) =
@@ -169,13 +156,35 @@ let gen_layout (m: mach) (prog: Arm.prog) : (string * int64) list =
     in (Int64.add offset block_size, (l, offset))
   in
   let extern_symbols = ref [] in
-  let rec compute_layout (prog: Arm.prog) (offset: int64) : (string * int64) list =
+  let global_defs = ref [] in
+  let rec validate_layout (l: (string * int64) list) : unit =
+    match l with
+    | [] -> ()
+    | (label, offset)::t ->
+      let found = try
+        let matched = lookup_label t label in matched
+      with _ -> -1L in
+      if Int64.equal found (-1L) then 
+        validate_layout t 
+      else 
+        validation_error offset label ("label '" ^ label ^ "' @ " ^ (Printf.sprintf "0x%x" (offset |> Int64.to_int)) ^ " matches with '" ^ label ^ "' @ " ^ (Printf.sprintf "0x%x" (found |> Int64.to_int)))
+  in let remove_defined_external_symbols (sym_list: string list) (l: (string * int64) list) : (string * int64) list = 
+    let rec remove_first_symbol (sym: string) (l: (string * int64) list) : (string * int64) list =
+      match l with 
+      | [] -> []
+      | (label, _)::t when label = sym -> t
+      | (label, offset)::t -> (label, offset) :: remove_first_symbol sym t
+    in List.fold_left (fun a s -> remove_first_symbol s a) l sym_list
+  in let check_extern_defs (gl: string list) (ed: string list) : unit = 
+    let _ = List.fold_left (fun b el -> if List.mem el ed then (b && true) else (linker_error el ("label '" ^ el ^ "' declared as external but could not be found!"))) true gl in
+    () 
+  in let rec compute_layout (prog: Arm.prog) (offset: int64) : (string * int64) list =
     match prog with
     | [] -> []
     | h::t ->
         let (offset, kvps) = begin
           match h with
-          | Arm.GloblDef _ -> (offset, [])
+          | Arm.GloblDef l -> global_defs := !global_defs @ [l]; (offset, [])
           | Arm.ExternSym label -> extern_symbols := !extern_symbols @ [label]; (offset, [(label, offset)])
           | Arm.TextDirect block -> List.fold_left (fun (offset_acc, kvps_acc) insn ->
               let (offset, kvps) = text_block_layout insn offset_acc in
@@ -189,7 +198,9 @@ let gen_layout (m: mach) (prog: Arm.prog) : (string * int64) list =
   in
   let pre_obfuscation = compute_layout prog 0L in
   let layout = List.map (fun (label, offset) -> (label, Int64.add offset m.info.mem_bot)) pre_obfuscation in
-  let req_extern_syms = List.filter (fun s -> not (List.mem s library_functions)) !extern_symbols in
+  let satisfied_labels = library_functions @ [fst m.info.entry] in
+  let req_extern_syms = List.filter (fun s -> not (List.mem s satisfied_labels)) !extern_symbols in
+  check_extern_defs req_extern_syms !global_defs;
   let clean_layout = remove_defined_external_symbols req_extern_syms layout in
   validate_layout clean_layout; clean_layout
 
