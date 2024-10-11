@@ -511,17 +511,34 @@ let parse_data_block (lines : code_line list) : Arm.block =
   {entry=false; lbl=label; asm=Arm.Data(data)}
 
 (* assembly parsing *)
+let contains s1 s2 =
+  let re = Str.regexp_string s2
+  in
+      try ignore (Str.search_forward re s1 0); true
+      with Not_found -> false
+
+
+let remove_multiline_comments (lines: code_line list) : code_line list =  
+  let rec rmc (is_in_comment: bool) (lns: code_line list) : code_line list =
+    match lns with 
+    | [] -> []
+    | (_, h)::t when is_in_comment && contains h "*/" -> rmc false t
+    | _::t when is_in_comment -> rmc true t
+    | (_, h)::t when not is_in_comment && contains h "/*" -> rmc true t
+    | h::t -> h :: rmc false t
+  in rmc false lines
 
 let parse_assembly (lines : code_line list) : Arm.prog =
+  let cl_list = remove_multiline_comments lines in
   let global_defs =
-    (find_defs lines "global" |> transform_global_defs) @
-    (find_defs lines "globl" |> transform_global_defs)
+    (find_defs cl_list "global" |> transform_global_defs) @
+    (find_defs cl_list "globl" |> transform_global_defs)
   in
-  let extern_defs = find_defs lines "extern" |> transform_extern_defs in
-  let text_directives = List.concat (find_directives lines "text") in
+  let extern_defs = find_defs cl_list "extern" |> transform_extern_defs in
+  let text_directives = List.concat (find_directives cl_list "text") in
   let text_blocks = find_blocks text_directives in
   let text_blocks_parsed = Arm.TextDirect(List.map (fun x -> parse_text_block x) text_blocks) in
-  let data_directives = List.concat (find_directives lines "data") in
+  let data_directives = List.concat (find_directives cl_list "data") in
   let data_blocks = find_blocks data_directives in
   let data_blocks_parsed : Arm.tld list = 
     (if List.length (List.nth data_blocks 0) = 0 then 
