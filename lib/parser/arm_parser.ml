@@ -325,13 +325,20 @@ let operands_of_tokens ((ln, insn) : code_line) (args : string list) : Arm.opera
         [operand_of_string (ln, insn) a1; operand_of_string (ln, insn) a2; operand_of_string (ln, insn) a3]
   | _ -> raise (Invalid_argument "Invalid number of operands")
 
+let transform_inline_bytes (toks: string list) : string list =
+  let inline_transform (tok: string) : string = 
+    match tok with 
+    | t when (String.starts_with ~prefix:"'" t && String.ends_with ~suffix:"'" t) -> String.get tok 1 |> Char.code |> string_of_int
+    | t -> t
+  in List.map inline_transform toks
+
 let parse_insn ((ln, insn) : code_line) (tokens : string list) : Arm.insn =
   if List.length tokens = 0 then
     arm_error ln insn insn "Empty instruction!"
   else
     let mnemonic = List.nth tokens 0 in
     let opcode = opcode_of_string (ln, insn) mnemonic in
-    let operands = operands_of_tokens (ln, insn) (List.tl tokens) in
+    let operands = operands_of_tokens (ln, insn) ((List.tl tokens) |> transform_inline_bytes) in
     (opcode, operands)
 
 let parse_text_block (lines : code_line list) : Arm.block =
@@ -473,25 +480,26 @@ let parse_asciz ((ln, line) : code_line) (tokens : string list) : Arm.data =
     let bytes = List.map (fun x -> Char.code x) chars in
     Arm.ByteArr(bytes @ [0])
 
+
 let parse_ddef ((ln, line) : code_line) (tokens : string list) : Arm.data =
   if List.length tokens = 0 then
     arm_error ln line line "Empty data definition!"
   else
     let mnemonic = List.nth tokens 0 in
     match mnemonic, ((List.length tokens) - 1) with
-    | ".quad", 1 -> parse_quad (ln, line) (List.tl tokens)
-    | ".quad", _ -> parse_quad_arr (ln, line) (List.tl tokens)
-    | ".dword", 1 -> parse_quad (ln, line) (List.tl tokens)
-    | ".dword", _ -> parse_quad_arr (ln, line) (List.tl tokens)
-    | ".byte", 1 -> parse_byte (ln, line) (List.tl tokens)
-    | ".byte", _ -> parse_byte_arr (ln, line) (List.tl tokens)
-    | ".string", _ -> parse_asciz (ln, line) (List.tl tokens)
-    | ".asciz", _ -> parse_asciz (ln, line) (List.tl tokens)
-    | ".word", 1 -> parse_word (ln, line) (List.tl tokens)
-    | ".word", _ -> parse_word_arr (ln, line) (List.tl tokens)
-    | ".int", 1 -> parse_word (ln, line) (List.tl tokens)
-    | ".int", _ -> parse_word_arr (ln, line) (List.tl tokens)
-    | ".skip", 1 -> parse_skip (ln, line) (List.tl tokens)
+    | ".quad", 1 -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_quad (ln, line) parsable
+    | ".quad", _ -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_quad_arr (ln, line) parsable
+    | ".dword", 1 -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_quad (ln, line) parsable
+    | ".dword", _ -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_quad_arr (ln, line) parsable
+    | ".byte", 1 -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_byte (ln, line) parsable
+    | ".byte", _ -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_byte_arr (ln, line) parsable
+    | ".string", _ -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_asciz (ln, line) parsable
+    | ".asciz", _ -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_asciz (ln, line) parsable
+    | ".word", 1 -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_word (ln, line) parsable
+    | ".word", _ -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_word_arr (ln, line) parsable
+    | ".int", 1 -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_word (ln, line) parsable
+    | ".int", _ -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_word_arr (ln, line) parsable
+    | ".skip", _ -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_skip (ln, line) parsable
     | _ -> arm_error ln line mnemonic "Invalid data definition"
 
 let parse_data_block (lines : code_line list) : Arm.block =
