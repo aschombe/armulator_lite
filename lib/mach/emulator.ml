@@ -15,7 +15,11 @@ let update_flags (result: Int64_overflow.t) : Mach.flags =
 
 let step (m': Mach.t) : Mach.t = 
   let m = Plugins.execute_plugin_event Plugins.PreExecutionEvent m' in
-  let insn = Mach.get_insn m m.pc in
+  let insn = (
+    try
+      Mach.get_insn m m.pc
+    with _ -> Mach.execution_error m
+  ) in
   if m.opts.print_machine_state then print_endline (Printf.sprintf "+%04d: %s" (Int64.to_int m.pc) (Arm_stringifier.string_of_insn insn));
   match insn with
   | (Arm.Mov, [o1; o2]) ->
@@ -283,8 +287,13 @@ let debug (m: Mach.t) : unit =
     let executed = (String.concat " " (command :: args)) in
     match command with 
     | "s" | "step" -> begin
-      let copied = Mach.copy m in
-      let m' = dbg_step m in loop m' (copied :: steps) executed
+      if Int64.equal m.pc m.info.exit_val then begin 
+        Printf.printf "program has exited. use 'q' to exit\n%!";
+        loop m steps executed
+      end else begin 
+        let copied = Mach.copy m in
+        let m' = dbg_step m in loop m' (copied :: steps) executed
+      end
     end
     | "bs" | "backstep" -> begin
       if List.length steps > 0 then 

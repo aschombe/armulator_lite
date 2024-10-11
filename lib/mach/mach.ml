@@ -112,6 +112,13 @@ let mach_error (m: mach) (highlight : string) (msg : string) : 'a =
     let () = Printf.fprintf Out_channel.stderr "\t%s\n\n" highlighted_line in
     raise (No_entrypoint)
 
+let execution_error (m: mach) : 'a =
+  let highlighted_line = Str.global_replace (Str.regexp (Int64.to_string m.pc)) ("\x1b[1;91m" ^ (Int64.to_string m.pc) ^ "\x1b[0m") (Int64.to_string m.pc) in
+  let () = Printf.fprintf Out_channel.stderr "\x1b[1;91mExecution error \x1b[0mat address \x1b[1;97m0x%x\x1b[0m:" (m.pc |> Int64.to_int) in
+  let () = Printf.fprintf Out_channel.stderr " %s '%s'.\n\n" "Could not execute instruction at address" (Int64.to_string m.pc) in
+  let () = Printf.fprintf Out_channel.stderr "\t%s\n\n" highlighted_line in
+  raise (Segmentation_fault "Could not execute instruction at address")
+
 let validation_error (offset: int64) (highlight : string) (msg : string) : 'a =
   let highlighted_line = Str.global_replace (Str.regexp highlight) ("\x1b[1;91m" ^ highlight ^ "\x1b[0m") "Invalid layout!" in
   let () = Printf.fprintf Out_channel.stderr "\x1b[1;91mLinker error \x1b[0mat address \x1b[1;97m0x%x\x1b[0m:" (offset |> Int64.to_int) in
