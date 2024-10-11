@@ -220,7 +220,7 @@ let transform_extern_defs (defs : code_line list) : Arm.tld list =
 (* instruction parsing *)
 let opcode_of_string ((ln, insn) : code_line) (mnemonic : string) : Arm.opcode =
   let pieces = String.split_on_char '.' mnemonic in
-  let partial = List.nth pieces 0 in
+  let partial = List.nth pieces 0 |> String.lowercase_ascii in
   match partial with
   | "mov" -> Arm.Mov | "adr" -> Arm.Adr
   | "ldr" -> Arm.Ldr | "ldrb" -> Arm.Ldrb | "str" -> Arm.Str | "strb" -> Arm.Strb
@@ -247,7 +247,8 @@ let opcode_of_string ((ln, insn) : code_line) (mnemonic : string) : Arm.opcode =
   | _ -> arm_error ln insn mnemonic "Invalid mnemonic"
 
 let register_of_string ((ln, insn) : code_line) (reg : string) : Arm.reg =
-  match reg with
+  let lr = String.lowercase_ascii reg in 
+  match lr with
   | "x0" -> Arm.X0 | "x1" -> Arm.X1 | "x2" -> Arm.X2 | "x3" -> Arm.X3
   | "x4" -> Arm.X4 | "x5" -> Arm.X5 | "x6" -> Arm.X6 | "x7" -> Arm.X7
   | "x8" -> Arm.X8 | "x9" -> Arm.X9

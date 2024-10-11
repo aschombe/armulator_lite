@@ -1,5 +1,5 @@
-.global _start
-.extern printf
+.extern printf 
+.global _start 
 
 .text
 _start:
