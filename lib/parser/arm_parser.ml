@@ -487,19 +487,19 @@ let parse_ddef ((ln, line) : code_line) (tokens : string list) : Arm.data =
   else
     let mnemonic = List.nth tokens 0 in
     match mnemonic, ((List.length tokens) - 1) with
-    | ".quad", 1 -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_quad (ln, line) parsable
-    | ".quad", _ -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_quad_arr (ln, line) parsable
-    | ".dword", 1 -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_quad (ln, line) parsable
-    | ".dword", _ -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_quad_arr (ln, line) parsable
-    | ".byte", 1 -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_byte (ln, line) parsable
-    | ".byte", _ -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_byte_arr (ln, line) parsable
-    | ".string", _ -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_asciz (ln, line) parsable
-    | ".asciz", _ -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_asciz (ln, line) parsable
-    | ".word", 1 -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_word (ln, line) parsable
-    | ".word", _ -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_word_arr (ln, line) parsable
-    | ".int", 1 -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_word (ln, line) parsable
-    | ".int", _ -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_word_arr (ln, line) parsable
-    | ".skip", _ -> let parsable = List.tl tokens  |> transform_inline_bytes in parse_skip (ln, line) parsable
+    | ".quad", 1 -> let parsable = List.tl tokens |> transform_inline_bytes in parse_quad (ln, line) parsable
+    | ".quad", _ -> let parsable = List.tl tokens |> transform_inline_bytes in parse_quad_arr (ln, line) parsable
+    | ".dword", 1 -> let parsable = List.tl tokens |> transform_inline_bytes in parse_quad (ln, line) parsable
+    | ".dword", _ -> let parsable = List.tl tokens |> transform_inline_bytes in parse_quad_arr (ln, line) parsable
+    | ".byte", 1 -> let parsable = List.tl tokens |> transform_inline_bytes in parse_byte (ln, line) parsable
+    | ".byte", _ -> let parsable = List.tl tokens |> transform_inline_bytes in parse_byte_arr (ln, line) parsable
+    | ".string", _ -> let parsable = List.tl tokens |> transform_inline_bytes in parse_asciz (ln, line) parsable
+    | ".asciz", _ -> let parsable = List.tl tokens |> transform_inline_bytes in parse_asciz (ln, line) parsable
+    | ".word", 1 -> let parsable = List.tl tokens |> transform_inline_bytes in parse_word (ln, line) parsable
+    | ".word", _ -> let parsable = List.tl tokens |> transform_inline_bytes in parse_word_arr (ln, line) parsable
+    | ".int", 1 -> let parsable = List.tl tokens |> transform_inline_bytes in parse_word (ln, line) parsable
+    | ".int", _ -> let parsable = List.tl tokens |> transform_inline_bytes in parse_word_arr (ln, line) parsable
+    | ".skip", _ -> let parsable = List.tl tokens |> transform_inline_bytes in parse_skip (ln, line) parsable
     | _ -> arm_error ln line mnemonic "Invalid data definition"
 
 let parse_data_block (lines : code_line list) : Arm.block =
@@ -530,14 +530,20 @@ let remove_multiline_comments (lines: code_line list) : code_line list =
 
 let parse_assembly (lines : code_line list) : Arm.prog =
   let cl_list = remove_multiline_comments lines in
+  let cl_globl_defs = find_defs cl_list "globl" in 
+  let cl_global_defs = find_defs cl_list "global" in 
   let global_defs =
-    (find_defs cl_list "global" |> transform_global_defs) @
-    (find_defs cl_list "globl" |> transform_global_defs)
+    (cl_globl_defs |> transform_global_defs) @
+    (cl_global_defs |> transform_global_defs)
   in
+  let cl_extern_defs = (find_defs cl_list "extern" |> List.map (fun (ln, el) -> (ln, ".extern " ^ el))) @ 
+  ((List.map (fun (ln, el) -> (ln, ".global " ^ el)) cl_global_defs) 
+  @ (List.map (fun (ln, el) -> (ln, ".globl " ^ el)) cl_globl_defs) )in
   let extern_defs = find_defs cl_list "extern" |> transform_extern_defs in
-  let text_directives = List.concat (find_directives cl_list "text") in
+  let cl_clean = List.filter (fun (ln, el) -> not (List.mem (ln, el) cl_extern_defs)) cl_list in
+  let text_directives = List.concat (find_directives cl_clean "text") in
   let text_blocks = find_blocks text_directives in
-  let text_blocks_parsed = Arm.TextDirect(List.map (fun x -> parse_text_block x) text_blocks) in
+  let text_blocks_parsed = [Arm.TextDirect(List.map (fun x -> parse_text_block x) text_blocks)] in
   let data_directives = List.concat (find_directives cl_list "data") in
   let data_blocks = find_blocks data_directives in
   let data_blocks_parsed : Arm.tld list = 
@@ -545,4 +551,4 @@ let parse_assembly (lines : code_line list) : Arm.prog =
       []
     else 
       [(Arm.DataDirect(List.map (fun x -> parse_data_block x) data_blocks))]) in
-  extern_defs @ global_defs @ [text_blocks_parsed] @ data_blocks_parsed
+  extern_defs @ global_defs @ text_blocks_parsed @ data_blocks_parsed
