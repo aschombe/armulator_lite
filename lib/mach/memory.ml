@@ -1,3 +1,12 @@
+exception Invalid_address of int64
+
+let address_error (op_type: string) (addr: int64) (highlight : string) (msg : string) : 'a =
+  let highlighted_line = Str.global_replace (Str.regexp highlight) ("\x1b[1;91m" ^ highlight ^ "\x1b[0m") "Invalid address!" in
+  let () = Printf.fprintf Out_channel.stderr "\x1b[1;91m%s error \x1b[0mat address \x1b[1;97m0x%x\x1b[0m:" op_type (addr |> Int64.to_int) in
+  let () = Printf.fprintf Out_channel.stderr " %s.\n\n" msg in
+  let () = Printf.fprintf Out_channel.stderr "\t%s\n\n" highlighted_line in
+  raise (Invalid_address addr)
+
 let mem_store_address (m: Mach.t) (o: Arm.operand) (rgs: int64 array) : int =
   match o with
   | Arm.Imm (Lit q) -> Mach.map_addr m q
@@ -7,9 +16,18 @@ let mem_store_address (m: Mach.t) (o: Arm.operand) (rgs: int64 array) : int =
   | Arm.Offset(Arm.Ind3(r, Lit i)) -> Mach.map_addr m (Int64.add rgs.(Mach.reg_index r) i) 
   | _ -> Mach.mach_error m (Arm_stringifier.string_of_operand o) "Unexpected operand"
 
-let store_at (bt: Mach.sbyte) (addr: int) (m: Mach.sbyte array) = Array.set m addr bt
-let read_at (addr: int64) (m: Mach.sbyte array) : Mach.sbyte = Array.get m (Int64.to_int addr)
+let store_at (bt: Mach.sbyte) (addr: int) (m: Mach.sbyte array) = 
+  try
+    Array.set m addr bt
+  with _ ->
+    address_error "Write" (Int64.add 0x400000L (Int64.of_int addr)) "Invalid address!" "Could not write to memory!"
 
+let read_at (addr: int64) (m: Mach.sbyte array) : Mach.sbyte = 
+  try 
+    Array.get m (Int64.to_int addr)
+  with _ ->
+    address_error "Read" (Int64.add 0x400000L addr) "Invalid address!" "Could not read from memory!"
+    
 let sbytes_of_data : Arm.data -> Mach.sbyte list = function
   | Arm.Quad i -> Mach.sbytes_of_int64 i 
   | Arm.QuadArr ia -> List.flatten (List.map Mach.sbytes_of_int64 ia) 
