@@ -3,7 +3,7 @@
  (name main)
  (modules main)
  (promote (until-clean))
- (libraries dynlink arm str mach emulator arm_parser cmd_parser arm_stringifier plugins))
+ (libraries dynlink arm str mach emulator arm_parser cmd_parser arm_stringifier plugins fs))
 
 (executable
  (name test_plugin)

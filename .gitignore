@@ -36,3 +36,7 @@ node_modules/
 
 # compiled plugins
 plugins/
+
+# arm programs
+armprograms/copystr.s 
+armprograms/copystr_data.s

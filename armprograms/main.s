@@ -4,8 +4,6 @@
 
 .text
 _start:
-    mov x5, 'a'
-
     bl hello_world
 
     mov x0, 0

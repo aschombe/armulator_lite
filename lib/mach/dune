@@ -11,7 +11,12 @@
 (library
   (name system)
   (modules system)
-  (libraries arm mach decoder memory plugins))
+  (libraries arm mach decoder memory plugins fs))
+
+(library
+  (name fs)
+  (modules fs)
+  (libraries arm arm_parser mach decoder memory plugins))
 
 (library
   (name memory)

@@ -21,23 +21,8 @@ let mem_bot = ref 0x400000
 let mem_size = ref 0x10000
 let exit_val = ref 0xfdead
 let entry_label = ref "_start"
-
-let read_file (file:string) : Arm_parser.code_line list =
-  let lines = ref [] in
-  let ln = ref 1 in
-  let channel = open_in file in
-  try while true; do
-    lines := (!ln, input_line channel) :: !lines;
-    ln := !ln + 1
-  done; []
-  with End_of_file ->
-    close_in channel;
-    List.rev !lines
-
-let write_file (file:string) (contents: string) : unit =
-  let channel = open_out file in
-  output_string channel contents;
-  close_out channel
+let stdin = ref ""
+let stdin_contents = ref ""
 
 let _debug lines =
   let text_directives = Arm_parser.find_directives lines "text" in
@@ -49,12 +34,13 @@ let _debug lines =
 
 let main (plugins: (module Plugins.EMULATOR_PLUGIN) list) (lines: Arm_parser.code_line list) =
   let prog = Arm_parser.parse_assembly lines in
-  if !output_file <> "" then write_file !output_file (Arm_stringifier.string_of_prog prog);
+  if !output_file <> "" then Fs.write_file !output_file (Arm_stringifier.string_of_prog prog);
 
   let _stringified = Arm_stringifier.ast_string_of_prog prog in
   (if !debugger then (print_machine_info := true; print_machine_state := true));
-  let m = Mach.init prog (Some(!debugger)) (Some(!print_machine_state)) (Some(!mem_bot |> Int64.of_int)) (Some(!mem_size)) (Some(!exit_val |> Int64.of_int)) (Some(!entry_label)) in
-  List.iter (fun pl -> let module M = (val pl : Plugins.EMULATOR_PLUGIN) in Cmd_parser.parse_arguments (Sys.argv |> Array.to_list) M.options; let _ = M.on_load m in ()) plugins;
+  (if !stdin <> "" then stdin_contents := String.concat "\n" (Fs.read_lines !stdin));
+  let m = Mach.init prog (Some(!debugger)) (Some(!print_machine_state)) (Some(!mem_bot |> Int64.of_int)) (Some(!mem_size)) (Some(!exit_val |> Int64.of_int)) (Some(!entry_label)) (Some(!stdin_contents)) in
+  List.iter (fun pl -> let module M = (val pl : Plugins.EMULATOR_PLUGIN) in Cmd_parser.parse_arguments (Sys.argv |> Array.to_list |> List.tl) M.options; let _ = M.on_load m in ()) plugins;
   if !print_machine_info then Mach.print_machine_info m;
   if !print_machine_state then Mach.print_machine_state m;
   if !debug then _debug lines;
@@ -83,11 +69,12 @@ let () =
     ("--exit-val", Cmd_parser.Set_int exit_val, "End program when pc is this value");
     ("--entry-label", Cmd_parser.Set_string entry_label, "Entry label");
     ("--plugins", Cmd_parser.Set_string plugin_list, "Comma separated list of plugins to load");
+    ("--stdin", Cmd_parser.Set_string stdin, "File that contains stdin contents");
     ("--help", Cmd_parser.Usage_msg, "Displays this message");
   ] in
   let files = Cmd_parser.parse_cmd_arguments (Sys.argv |> Array.to_list |> List.tl) args in
   let plugin_names = (String.split_on_char ',' !plugin_list) |> List.filter (fun n -> not (n = "")) in
   List.iter (fun name -> begin Printf.printf "[plugin_loader] loading '%s'...%!" name; load_plugin name; Printf.printf "done.\n%!" end) plugin_names;
   let plugins = Plugins.get_loaded_plugins () in
-  let lines = List.fold_left (fun l f -> l @ read_file f) [] files in
+  let lines = List.fold_left (fun l f -> l @ Fs.read_asm_file f) [] files in
   main plugins lines

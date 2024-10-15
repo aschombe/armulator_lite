@@ -29,7 +29,7 @@ let operand_as_int64 (m: Mach.t) (op: Arm.operand) : int64 =
   match op with 
   | Arm.Imm (Lit i) -> i
   | Arm.Imm (Lbl l) -> Mach.lookup_label m.info.layout l
-  | Arm.Reg r -> if is_x_register r then m.regs.(Mach.reg_index r) else Mach.mach_error m (Arm_stringifier.string_of_operand op) "Needs X register"
+  | Arm.Reg r -> m.regs.(Mach.reg_index r)
   | _ -> Mach.mach_error m (Arm_stringifier.string_of_operand op) "Unexpected immediate"
 
 let operand_as_int32 (m: Mach.t) (op: Arm.operand) : int32 = 

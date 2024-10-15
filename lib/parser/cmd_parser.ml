@@ -42,10 +42,15 @@ let rec parse_arguments (args: string list) (opts: arg list) : unit =
   match args with
   | [] -> ()
   | o::t when not (is_option o) -> parse_arguments t opts
-  | o::v::t when (is_option o) && not (is_option v) -> match_to_spec o v opts opts; parse_arguments (v::t) opts
-  | o::v::t when (is_option o) && (is_option v) -> match_to_spec o "true" opts opts; parse_arguments (v::t) opts
-  | o::t when (is_option o) -> match_to_spec o "true" opts opts; parse_arguments t opts
-  | _ -> ()
+  | o::t ->
+    let broken = String.split_on_char '=' o in
+    let optname = List.nth broken 0 in
+    if List.length broken > 1 then begin
+      let optarg = List.nth broken 1 in
+      match_to_spec optname optarg  opts opts; parse_arguments t opts
+    end else begin (* assume boolean argument *)
+      match_to_spec optname "true" opts opts; parse_arguments t opts
+    end
 
 let rec parse_cmd_arguments (args: string list) (opts: arg list) : string list =
   match args with

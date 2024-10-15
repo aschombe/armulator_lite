@@ -95,7 +95,7 @@ let start_compare_program (m: Mach.t) : unit =
   let lines = read_file !compared in
   let prog = Arm_parser.parse_assembly lines in
   let _stringified = Arm_stringifier.ast_string_of_prog prog in 
-  let m' = Mach.init prog (Some(m.opts.debugger)) (Some(m.opts.print_machine_state)) (Some(m.info.mem_bot)) (Some(m.info.mem_size |> Int64.to_int)) (Some(m.info.exit_val)) (Some(m.info.entry |> fst)) in
+  let m' = Mach.init prog (Some(m.opts.debugger)) (Some(m.opts.print_machine_state)) (Some(m.info.mem_bot)) (Some(m.info.mem_size |> Int64.to_int)) (Some(m.info.exit_val)) (Some(m.info.entry |> fst)) (Some(m.info.stdin)) in
   List.iter (fun pl -> let module M = (val pl : Plugins.EMULATOR_PLUGIN) in Cmd_parser.parse_arguments (Sys.argv |> Array.to_list) M.options; let _ = M.on_load m in ()) (Plugins.get_loaded_plugins ()); 
   if m'.opts.print_machine_state then Mach.print_machine_state m';
   if m'.opts.debugger then Emulator.debug m' else Emulator.run m'; can_start := true
@@ -138,8 +138,8 @@ module M: Plugins.EMULATOR_PLUGIN = struct
   let on_unload = fun m -> if !base_ran && !can_start then run_plagiarism_detection !base_program !compare_program; m
   let on_exit = fun m -> on_exit_restart_or_check m; m
 
-  let on_pre_execute = fun m -> collect_used_registers m
-  let on_post_execute = fun m -> collect_data m
+  let on_pre_execute = collect_used_registers
+  let on_post_execute = collect_data
 end
 
 let () = Plugins.append_plugin (module M : Plugins.EMULATOR_PLUGIN)

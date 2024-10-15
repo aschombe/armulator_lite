@@ -52,9 +52,9 @@ let step (m': Mach.t) : Mach.t =
     m.mem <- data;
     m
   | (Arm.Strb, [o1; o2]) ->
-    let reg = Decoder.operand_as_int64 m o1 in
+    let reg = Decoder.operand_as_int32 m o1 in
     let load_addr = Decoder.operand_as_load_addr m o2 in
-    let data = Memory.write_bytes load_addr 1L (Mach.sbytes_of_int64 reg) m.mem in 
+    let data = Memory.write_bytes load_addr 1L (Mach.sbytes_of_int32 reg) m.mem in 
     m.mem <- data;
     m
   | (Arm.Add, [o1; o2; o3]) -> 

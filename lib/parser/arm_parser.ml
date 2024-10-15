@@ -230,7 +230,7 @@ let opcode_of_string ((ln, insn) : code_line) (mnemonic : string) : Arm.opcode =
   | "ands" -> Arm.Ands | "orrs" -> Arm.Orrs | "lsls" -> Arm.Lsls | "lsrs" -> Arm.Lsrs | "asrs" -> Arm.Asrs | "nots" -> Arm.Nots
   | "b" -> (
     try
-      let cnd_code_mnemonic = List.nth (String.split_on_char '.' mnemonic) 1 in
+      let cnd_code_mnemonic = List.nth (String.split_on_char '.' mnemonic) 1 |> String.lowercase_ascii in
       let cnd_code = (match cnd_code_mnemonic with
       | "eq" -> Arm.Eq
       | "ne" -> Arm.Ne
@@ -552,4 +552,11 @@ let parse_assembly (lines : code_line list) : Arm.prog =
       []
     else 
       [(Arm.DataDirect(List.map (fun x -> parse_data_block x) data_blocks))]) in
-  extern_defs @ global_defs @ text_blocks_parsed @ data_blocks_parsed
+  let bss_directives = List.concat (find_directives cl_list "bss") in
+  let bss_blocks = find_blocks bss_directives in
+  let bss_blocks_parsed : Arm.tld list = 
+    (if List.length (List.nth data_blocks 0) = 0 then 
+      []
+    else 
+      [(Arm.DataDirect(List.map (fun x -> parse_data_block x) bss_blocks))]) in
+  extern_defs @ global_defs @ text_blocks_parsed @ data_blocks_parsed @ bss_blocks_parsed

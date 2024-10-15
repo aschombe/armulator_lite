@@ -4,6 +4,7 @@ exception Invalid_layout of string
 exception No_entrypoint
 
 let insn_size = 8L
+let max_file_sz = 0x10000
 let library_functions : string list = [
   "printf";
   "scanf"
@@ -31,6 +32,8 @@ type mach_info = {
   exit_val: int64;
   entry: (string * int64);
   layout: (string * int64) list;
+  stdin: string;
+  mutable fd_map: (int * string * int) list;
 }
 
 type mach_opts = {
@@ -41,6 +44,7 @@ type mach_opts = {
 type mach = {
     opts: mach_opts;
     info: mach_info;
+    mutable fd_table: (int * int * sbyte array) list; (* fd, offset, contents *)
     mutable regs: int64 array;
     mutable pc: int64;
     mutable mem: sbyte array;
@@ -60,7 +64,10 @@ let copy (m: mach) : mach =
       exit_val = m.info.exit_val;
       entry = m.info.entry;
       layout = m.info.layout;
+      stdin = m.info.stdin;
+      fd_map = m.info.fd_map;
     };
+    fd_table = [];
     regs = Array.copy m.regs;
     pc = m.pc;
     mem = Array.copy m.mem;
@@ -247,6 +254,14 @@ let rec string_of_sbytes (bs: sbyte list) : string =
   | Byte c::t -> (String.make 1 c) ^ string_of_sbytes t
   | _ -> ""
 
+let sbyte_array_of_string (s: string) : sbyte array =
+  let arr = Array.make max_file_sz (Byte '\000') in
+  let explode s = List.init (String.length s) (String.get s) in 
+  List.iteri (fun i c -> Array.set arr i (Byte c)) (explode s); 
+  arr
+
+let sbyte_array_of_size (sz: int) : sbyte array = Array.make sz (Byte '\000')
+
 let rec byte_array_of_sbytes (bs: sbyte list) : char list =
   match bs with
   | [] -> []
@@ -300,13 +315,14 @@ let print_sbyte_array (mem: sbyte array) (max_rows: int) : unit =
       end
   ) mem
 
-let init (prog: Arm.prog) (debugger: bool option) (print_machine_state: bool option) (mem_bot: int64 option) (mem_size: int option) (exit_val: int64 option) (entry_label: string option) : mach =
+let init (prog: Arm.prog) (debugger: bool option) (print_machine_state: bool option) (mem_bot: int64 option) (mem_size: int option) (exit_val: int64 option) (entry_label: string option) (stdin: string option): mach =
   let u_debugger = match debugger with | Some x -> x | None -> false in
   let u_print_machine_state = match print_machine_state with | Some x -> x | None -> false in
   let u_mem_bot = match mem_bot with | Some x -> x | None -> 0x400000L in
   let u_mem_size = match mem_size with | Some x -> x | None -> 0x10000 in
   let u_mem_top = Int64.add u_mem_bot (u_mem_size |> Int64.of_int) in
   let u_exit_val = match exit_val with | Some x -> x | None -> 0xfdeadL in
+  let u_stdin = match stdin with | Some s -> s | None -> "" in
   let nregs = 32 in
   let u_entry_label = match entry_label with | Some x -> x | None -> "_start" in
   let mopts = {
@@ -321,12 +337,14 @@ let init (prog: Arm.prog) (debugger: bool option) (print_machine_state: bool opt
     exit_val = u_exit_val;
     entry = (u_entry_label, 0L);
     layout = [];
+    stdin = u_stdin;
+    fd_map = [(0, "__internal_stdin", 0); (1, "__internal_stdout", 0); (2, "__internal_stderr", 0);]
   } in
   let program_bytes = build_program prog |> Array.of_list in
   let mem = Array.make u_mem_size InsFill in
   Array.blit program_bytes 0 mem 0 (Array.length program_bytes);
   let regs = Array.make nregs 0L in
-  let tmp_mach = { opts = mopts; info = minfo; regs; pc = 0L; mem; flags = { n = false; z = false; c = false; v = false; } } in
+  let tmp_mach = { opts = mopts; info = minfo; fd_table = []; regs; pc = 0L; mem; flags = { n = false; z = false; c = false; v = false; } } in
   let rec get_entry_addr (map: (string * int64) list) : int64 =
     match map with
     | [] -> mach_error tmp_mach u_entry_label "Entry point not defined"
@@ -336,6 +354,11 @@ let init (prog: Arm.prog) (debugger: bool option) (print_machine_state: bool opt
   regs.(reg_index Arm.LR) <- u_exit_val;
   regs.(reg_index Arm.SP) <- u_mem_top;
   let m = { opts = mopts; info = { minfo with layout = layout; entry = (u_entry_label, get_entry_addr layout) };
+    fd_table = [
+      (0, 0, sbyte_array_of_string u_stdin);
+      (1, 0, sbyte_array_of_size max_file_sz);
+      (2, 0, sbyte_array_of_size max_file_sz);
+    ];
     regs = regs;
     pc = (get_entry_addr layout);
     mem = mem;
