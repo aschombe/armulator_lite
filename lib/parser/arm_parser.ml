@@ -555,7 +555,7 @@ let parse_assembly (lines : code_line list) : Arm.prog =
   let bss_directives = List.concat (find_directives cl_list "bss") in
   let bss_blocks = find_blocks bss_directives in
   let bss_blocks_parsed : Arm.tld list = 
-    (if List.length (List.nth data_blocks 0) = 0 then 
+    (if List.length (List.nth bss_blocks 0) = 0 then 
       []
     else 
       [(Arm.DataDirect(List.map (fun x -> parse_data_block x) bss_blocks))]) in

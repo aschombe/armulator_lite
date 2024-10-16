@@ -10,35 +10,44 @@ let number_to_syscall = function
 | 62L -> SysLseek
 | n -> raise (Invalid_syscall n)
 
-let syscall_read (_m: Mach.t) (_fd: int64) (_buf: int64) (_count: int64) : int64 =
-  0L
+let syscall_read (m: Mach.t) (fd: int64) (buf: int64) (count: int64) : (Mach.t * int64) =
+  let rec find_file (fd: int) (tbl: Mach.fd_entry list): Mach.fd_entry = 
+    match tbl with 
+    | [] -> (-1, -1, -1, Array.of_list [])
+    | (tfd, offset, eof, contents)::t -> if tfd = fd then (tfd, offset, eof, contents) else find_file fd t
+  in
+  let (_fd, f_offset, f_eof, f_contents) = find_file (Int64.to_int fd) m.fd_table in 
+  let (f_count, bytes) = Fs.read_bytes f_offset f_eof (Int64.to_int count) f_contents in 
+  let mem = Memory.write_bytes buf (Int64.of_int f_count) (Array.to_list bytes) m.mem in 
+  m.mem <- mem; 
+  (m, f_count |> Int64.of_int)
 
 let syscall_write (m: Mach.t) (fd: int64) (buf: int64) (count: int64) : (Mach.t * int64) =
   let bytes = Memory.read_bytes buf count m.mem |> Array.of_list in 
-  let rec find_file (fd: int) (tbl: (int * int * Mach.sbyte array) list): (int * int * Mach.sbyte array) = 
+  let rec find_file (fd: int) (tbl: Mach.fd_entry list): Mach.fd_entry = 
     match tbl with 
-    | [] -> (-1, -1, Array.of_list [])
-    | (tfd, offset, contents)::t -> if tfd = fd then (tfd, offset, contents) else find_file fd t
+    | [] -> (-1, -1, -1, Array.of_list [])
+    | (tfd, offset, eof, contents)::t -> if tfd = fd then (tfd, offset, eof, contents) else find_file fd t
   in
-  let rec update_file (fd: int) (offset: int) (contents: Mach.sbyte array) (tbl: (int * int * Mach.sbyte array) list): (int * int * Mach.sbyte array) list =
+  let rec update_file (fd: int) (offset: int) (eof: int) (contents: Mach.sbyte array) (tbl: Mach.fd_entry list): Mach.fd_entry list =
     match tbl with 
     | [] -> []
-    | (tfd, old_offset, old_contents)::t -> if tfd = fd then (tfd, offset, contents) :: update_file fd offset contents t else (tfd, old_offset, old_contents) :: update_file fd offset contents t
+    | (tfd, old_offset, old_eof, old_contents)::t -> if tfd = fd then (tfd, offset, eof, contents) :: update_file fd offset eof contents t else (tfd, old_offset, old_eof, old_contents) :: update_file fd offset eof contents t
   in
-  let (fd, offset, contents) = find_file (Int64.to_int fd) m.fd_table in 
-  if fd = -1 then (m, -1L) else begin 
-    let (f_offset, f_contents) = Fs.write_bytes bytes offset (Int64.to_int count) contents in 
-    let updated_fd_table = update_file fd f_offset f_contents m.fd_table in 
+  let (fd, offset, eof, contents) = find_file (Int64.to_int fd) m.fd_table in 
+  if fd = -1 then (Fs.fs_sync m, -1L) else begin 
+    let (f_offset, f_contents) = Fs.write_bytes bytes offset (Int64.to_int count) contents in
+    let updated_fd_table = update_file fd f_offset (max eof f_offset) f_contents m.fd_table in 
     m.fd_table <- updated_fd_table;
-    (m, count)
+    (Fs.fs_sync m, count)
   end
 
 let syscall_open (m: Mach.t) (_dfd: int64) (p_filename: int64) (_flags: int64) (_mode: int64) : (Mach.t * int64) = 
   let bytes = Memory.read_to_null_terminator p_filename m.mem in 
   let fname = Mach.string_of_sbytes bytes in
-  let (fd, offset, contents) = Fs.open_file fname in 
+  let (fd, offset, eof, contents) = Fs.open_file fname in 
   m.info.fd_map <- m.info.fd_map @ [(fd, fname, offset)];
-  m.fd_table <- m.fd_table @ [(fd, offset, contents)];
+  m.fd_table <- m.fd_table @ [(fd, offset, eof, contents)];
   (m, Int64.of_int fd)
 
 let syscall_close (m: Mach.t) (fd: int64) : (Mach.t * int64) = 
@@ -47,15 +56,15 @@ let syscall_close (m: Mach.t) (fd: int64) : (Mach.t * int64) =
   (m, fd)
 
 let syscall_lseek (m: Mach.t) (fd: int64) (offset: int64) (whence: int64) : (Mach.t * int64) = 
-  let rec find_offset_of (fd: int) (tbl: (int * int * Mach.sbyte array) list): int = 
+  let rec find_offset_of (fd: int) (tbl: (int * int * int* Mach.sbyte array) list): int = 
     match tbl with 
     | [] -> -1
-    | (tfd, offset, _)::t -> if tfd = fd then offset else find_offset_of fd t
+    | (tfd, offset, _, _)::t -> if tfd = fd then offset else find_offset_of fd t
   in 
-  let rec update_offset_of (fd: int) (n_offset: int) (tbl: (int * int * Mach.sbyte array) list): (int * int * Mach.sbyte array) list = 
+  let rec update_offset_of (fd: int) (n_offset: int) (tbl: Mach.fd_entry list): Mach.fd_entry list = 
     match tbl with 
     | [] -> []
-    | (tfd, offset, contents)::t -> if tfd = fd then (tfd, n_offset, contents) :: update_offset_of fd n_offset t else (tfd, offset, contents) :: update_offset_of fd n_offset t
+    | (tfd, offset, eof, contents)::t -> if tfd = fd then (tfd, n_offset, eof, contents) :: update_offset_of fd n_offset t else (tfd, offset, eof, contents) :: update_offset_of fd n_offset t
   in 
   let curr_offset = find_offset_of (Int64.to_int fd) m.fd_table in 
   let new_offset = begin match whence with 
@@ -85,7 +94,7 @@ let execute_syscall (m: Mach.t) : Mach.t =
   let _arg4 = m.regs.(Mach.reg_index X4) in
   let _arg5 = m.regs.(Mach.reg_index X5) in 
   match syscall_exec with 
-  | SysRead -> let result = syscall_read m arg0 arg1 arg2 in m.regs.(Mach.reg_index X0) <- result; m
+  | SysRead -> let (m', result) = syscall_read m arg0 arg1 arg2 in m.regs.(Mach.reg_index X0) <- result; m'
   | SysWrite -> let (m', result) = syscall_write m arg0 arg1 arg2 in m.regs.(Mach.reg_index X0) <- result; m'
   | SysExit -> let result = syscall_exit m arg0 in m.regs.(Mach.reg_index X0) <- result; let m' = Plugins.execute_plugin_event Plugins.OnExitEvent m in m'
   | SysOpen -> let (m', result) = syscall_open m arg0 arg1 arg2 arg3 in m'.regs.(Mach.reg_index X0) <- result; m'

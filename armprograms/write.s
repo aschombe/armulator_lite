@@ -4,7 +4,7 @@
 .text
 _start:
     mov x0, 1
-    adr x1, str 
+    adr x1, s
     mov x2, 14
     mov x8, 64
     svc 0
@@ -45,6 +45,6 @@ vec1: .quad 10, 20, 30
 vec2: .quad 1, 2, 3
 len: .quad 3
 result: .quad 0
-str: .asciz "Hello world!\n"
+s: .asciz "Hello world!\n"
 format: .asciz "%s: %d\n"
 vec: .asciz "dot product is"

@@ -17,6 +17,13 @@ type sbyte =
 | Insn of Arm.insn
 | Byte of char
 
+type fd = int 
+type offset = int
+type eof = int
+type fd_entry = (fd * offset * eof * sbyte array)
+
+type fd_mapping = (fd * string * offset)
+
 type flags = {
   mutable n: bool; (* negative flag is set if the result of any instruction is negative *)
   mutable z: bool; (* zero flag is set if the result of any instruction is zero *)
@@ -33,7 +40,7 @@ type mach_info = {
   entry: (string * int64);
   layout: (string * int64) list;
   stdin: string;
-  mutable fd_map: (int * string * int) list;
+  mutable fd_map: fd_mapping list;
 }
 
 type mach_opts = {
@@ -44,7 +51,7 @@ type mach_opts = {
 type mach = {
     opts: mach_opts;
     info: mach_info;
-    mutable fd_table: (int * int * sbyte array) list; (* fd, offset, contents *)
+    mutable fd_table: fd_entry list; (* fd, offset, eof, contents *)
     mutable regs: int64 array;
     mutable pc: int64;
     mutable mem: sbyte array;
@@ -252,7 +259,7 @@ let rec string_of_sbytes (bs: sbyte list) : string =
   match bs with
   | [] -> ""
   | Byte c::t -> (String.make 1 c) ^ string_of_sbytes t
-  | _ -> ""
+  | _ -> "" 
 
 let sbyte_array_of_string (s: string) : sbyte array =
   let arr = Array.make max_file_sz (Byte '\000') in
@@ -353,11 +360,12 @@ let init (prog: Arm.prog) (debugger: bool option) (print_machine_state: bool opt
   let layout = gen_layout tmp_mach prog in
   regs.(reg_index Arm.LR) <- u_exit_val;
   regs.(reg_index Arm.SP) <- u_mem_top;
+  let stdin_bytes = sbyte_array_of_string u_stdin in
   let m = { opts = mopts; info = { minfo with layout = layout; entry = (u_entry_label, get_entry_addr layout) };
     fd_table = [
-      (0, 0, sbyte_array_of_string u_stdin);
-      (1, 0, sbyte_array_of_size max_file_sz);
-      (2, 0, sbyte_array_of_size max_file_sz);
+      (0, 0, Array.length stdin_bytes, stdin_bytes);
+      (1, 0, 0, sbyte_array_of_size max_file_sz);
+      (2, 0, 0, sbyte_array_of_size max_file_sz);
     ];
     regs = regs;
     pc = (get_entry_addr layout);
