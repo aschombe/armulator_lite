@@ -523,6 +523,7 @@ let remove_multiline_comments (lines: code_line list) : code_line list =
   let rec rmc (is_in_comment: bool) (lns: code_line list) : code_line list =
     match lns with 
     | [] -> []
+    | (_, h)::t when contains h "/*" && contains h "*/" -> rmc false t (* single line multiline comment case *)
     | (_, h)::t when is_in_comment && contains h "*/" -> rmc false t
     | _::t when is_in_comment -> rmc true t
     | (_, h)::t when not is_in_comment && contains h "/*" -> rmc true t

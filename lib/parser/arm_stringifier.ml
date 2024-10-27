@@ -104,7 +104,7 @@ let ast_string_of_operand = function
     | Offset(Ind1 i) -> "Arm.Offset(Arm.Ind1(Arm.Imm(" ^ (ast_string_of_imm i) ^ ")))"
     | Offset(Ind2 r) -> "Arm.Offset(Arm.Ind2(" ^ (ast_string_of_reg r) ^ "))"
     | Offset(Ind3 (r, i)) -> "Arm.Offset(Arm.Ind3(" ^ (ast_string_of_reg r) ^ ", Arm.Imm(" ^ (ast_string_of_imm i) ^ ")))"
-    | Offset(Ind4 (r, r2)) -> "Arm.Offset(Arm.Ind3(" ^ (ast_string_of_reg r) ^ ", " ^ (ast_string_of_reg r2) ^ "))"
+    | Offset(Ind4 (r, r2)) -> "Arm.Offset(Arm.Ind4(" ^ (ast_string_of_reg r) ^ ", " ^ (ast_string_of_reg r2) ^ "))"
 
 let string_of_insn (op, ops) =
     (string_of_opcode op) ^ " " ^ (String.concat ", " (List.map string_of_operand ops))

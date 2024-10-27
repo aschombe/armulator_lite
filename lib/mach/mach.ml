@@ -203,19 +203,19 @@ let gen_layout (m: mach) (prog: Arm.prog) : (string * int64) list =
     match prog with
     | [] -> []
     | h::t ->
-        let (offset, kvps) = begin
-          match h with
-          | Arm.GloblDef l -> global_defs := !global_defs @ [l]; (offset, [])
-          | Arm.ExternSym label -> extern_symbols := !extern_symbols @ [label]; (offset, [(label, offset)])
-          | Arm.TextDirect block -> List.fold_left (fun (offset_acc, kvps_acc) insn ->
-              let (offset, kvps) = text_block_layout insn offset_acc in
-              (offset, kvps_acc @ [kvps])
-            ) (offset, []) block
-          | Arm.DataDirect block -> List.fold_left (fun (offset_acc, kvps_acc) insn ->
-              let (offset, kvps) = data_block_layout insn offset_acc in
-              (offset, kvps_acc @ [kvps])
-            ) (offset, []) block
-          end in kvps @ (compute_layout t (Int64.add offset insn_size))
+    let (offset, kvps) = begin
+      match h with
+      | Arm.GloblDef l -> global_defs := !global_defs @ [l]; (offset, [])
+      | Arm.ExternSym label -> extern_symbols := !extern_symbols @ [label]; (offset, [(label, offset)])
+      | Arm.TextDirect block -> List.fold_left (fun (offset_acc, kvps_acc) insn ->
+          let (offset, kvps) = text_block_layout insn offset_acc in
+          (offset, kvps_acc @ [kvps])
+        ) (offset, []) block
+      | Arm.DataDirect block -> List.fold_left (fun (offset_acc, kvps_acc) insn ->
+          let (offset, kvps) = data_block_layout insn offset_acc in
+          (offset, kvps_acc @ [kvps])
+        ) (offset, []) block
+      end in kvps @ (compute_layout t (Int64.add offset insn_size))
   in
   let pre_obfuscation = compute_layout prog 0L in
   let layout = List.map (fun (label, offset) -> (label, Int64.add offset m.info.mem_bot)) pre_obfuscation in

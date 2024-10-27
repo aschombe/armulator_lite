@@ -10,7 +10,7 @@ all:
 pl:
 	@echo "compiling plugins..."
 	@printf "\t"
-	dune build bin/plagiarism.ml
+	dune build bin/plagiarism.cmxs
 	@cp _build/default/bin/plagiarism.cmxs plugins/plagiarism.cmxs
 	@chmod +w plugins/plagiarism.cmxs
 	

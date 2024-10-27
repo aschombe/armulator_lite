@@ -16,5 +16,5 @@
 (library
   (name arm_validator)
   (modules arm_validator)
-  (libraries arm_stringifier arm str))
+  (libraries mach arm_stringifier arm str decoder))
 

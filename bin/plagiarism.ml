@@ -114,10 +114,7 @@ let collect_data (m: Mach.t): Mach.t =
 let rec get_registers (m: Mach.t) (opl: Arm.operand list) : Arm.reg list = 
   match opl with
   | [] -> [] 
-  | h::t -> 
-    try 
-      let r = Decoder.operand_as_register_quiet m h in r :: get_registers m t 
-    with _ -> get_registers m t
+  | h::t -> if Decoder.operand_is_register h then Decoder.operand_as_register m h :: get_registers m t else get_registers m t 
 
 let collect_used_registers (m: Mach.t): Mach.t =
   let insn = Mach.get_insn m m.pc in
@@ -136,10 +133,10 @@ module M: Plugins.EMULATOR_PLUGIN = struct
   ]
   let on_load = fun m -> if not !base_ran then Printf.printf "[plagiarism] checking base file against '%s'\n" !compared; m
   let on_unload = fun m -> if !base_ran && !can_start then run_plagiarism_detection !base_program !compare_program; m
-  let on_exit = fun m -> on_exit_restart_or_check m; m
 
-  let on_pre_execute = collect_used_registers
-  let on_post_execute = collect_data
+  let on_pre_execute = fun m -> collect_used_registers m
+  let on_post_execute = fun m -> collect_data m
+  let on_exit = fun m -> on_exit_restart_or_check m; m
 end
 
 let () = Plugins.append_plugin (module M : Plugins.EMULATOR_PLUGIN)
