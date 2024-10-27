@@ -9,6 +9,7 @@ all:
 
 pl:
 	@echo "compiling plugins..."
+	$(shell mkdir -p plugins)
 	@printf "\t"
 	dune build bin/plagiarism.cmxs
 	@cp _build/default/bin/plagiarism.cmxs plugins/plagiarism.cmxs
