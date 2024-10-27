@@ -260,8 +260,8 @@ let run (m: Mach.t) : unit =
       let _ = Plugins.execute_plugin_event Plugins.OnUnloadEvent m'' in ()
     ) 
     else (
+      m'.pc <- (Int64.add m'.pc 8L);
       let m'' = Plugins.execute_plugin_event Plugins.PostExecutionEvent m' in
-      m''.pc <- (Int64.add m''.pc 8L);
       loop m''
     )
   in print_endline "\n__emulator_start"; loop m 
