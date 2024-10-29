@@ -12,6 +12,7 @@ module M: Plugins.EMULATOR_PLUGIN = struct
   ]
   let on_load = fun m -> Printf.printf "[test_plugin] now loaded with option '%s'\n" !test_arg; m
   let on_unload = fun m -> m
+  let on_start = fun m -> m
   let on_exit = fun m -> Printf.printf "[test_plugin] done with option\n"; m
   let on_pre_execute = fun m -> m
   let on_post_execute = post_exec

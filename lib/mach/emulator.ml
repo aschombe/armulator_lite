@@ -264,7 +264,8 @@ let run (m: Mach.t) : unit =
       let m'' = Plugins.execute_plugin_event Plugins.PostExecutionEvent m' in
       loop m''
     )
-  in print_endline "\n__emulator_start"; loop m 
+  in print_endline "\n__emulator_start"; 
+  let m' = Plugins.execute_plugin_event Plugins.OnStartEvent m in loop m'
 
 let unwrap_str s =
   match s with

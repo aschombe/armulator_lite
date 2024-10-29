@@ -134,6 +134,7 @@ module M: Plugins.EMULATOR_PLUGIN = struct
   let on_load = fun m -> if not !base_ran then Printf.printf "[plagiarism] checking base file against '%s'\n" !compared; m
   let on_unload = fun m -> if !base_ran && !can_start then run_plagiarism_detection !base_program !compare_program; m
 
+  let on_start = fun m -> m
   let on_pre_execute = fun m -> collect_used_registers m
   let on_post_execute = fun m -> collect_data m
   let on_exit = fun m -> on_exit_restart_or_check m; m

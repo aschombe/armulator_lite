@@ -4,6 +4,7 @@ type plugin_event =
 | PreExecutionEvent
 | PostExecutionEvent 
 | OnExitEvent
+| OnStartEvent
 
 module type EMULATOR_PLUGIN = sig 
   val name : string
@@ -11,6 +12,7 @@ module type EMULATOR_PLUGIN = sig
   val on_load : Mach.t -> Mach.t
   val on_unload : Mach.t -> Mach.t
 
+  val on_start : Mach.t -> Mach.t
   val on_pre_execute : Mach.t -> Mach.t
   val on_post_execute : Mach.t -> Mach.t
   val on_exit : Mach.t -> Mach.t
@@ -47,4 +49,5 @@ let execute_plugin_event (event: plugin_event) (m: Mach.t) : Mach.t =
       | OnLoadEvent -> M.on_load m
       | OnExitEvent -> M.on_exit m
       | OnUnloadEvent -> M.on_unload m
+      | OnStartEvent -> M.on_start m
     ) m !loaded_plugins
