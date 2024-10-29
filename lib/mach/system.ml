@@ -18,12 +18,12 @@ let syscall_read (m: Mach.t) (fd: int64) (buf: int64) (count: int64) : (Mach.t *
   in
   let (_fd, f_offset, f_eof, f_contents) = find_file (Int64.to_int fd) m.fd_table in 
   let (f_count, bytes) = Fs.read_bytes f_offset f_eof (Int64.to_int count) f_contents in 
-  let mem = Memory.write_bytes buf (Int64.of_int f_count) (Array.to_list bytes) m.mem in 
+  let mem = Memory.write_bytes (Mach.map_addr m buf) f_count (Array.to_list bytes) m.mem in 
   m.mem <- mem; 
   (m, f_count |> Int64.of_int)
 
 let syscall_write (m: Mach.t) (fd: int64) (buf: int64) (count: int64) : (Mach.t * int64) =
-  let bytes = Memory.read_bytes buf count m.mem |> Array.of_list in 
+  let bytes = Memory.read_bytes (Mach.map_addr m buf) (Int64.to_int count) m.mem |> Array.of_list in 
   let rec find_file (fd: int) (tbl: Mach.fd_entry list): Mach.fd_entry = 
     match tbl with 
     | [] -> (-1, -1, -1, Array.of_list [])
@@ -43,7 +43,7 @@ let syscall_write (m: Mach.t) (fd: int64) (buf: int64) (count: int64) : (Mach.t 
   end
 
 let syscall_open (m: Mach.t) (_dfd: int64) (p_filename: int64) (_flags: int64) (_mode: int64) : (Mach.t * int64) = 
-  let bytes = Memory.read_to_null_terminator p_filename m.mem in 
+  let bytes = Memory.read_to_null_terminator (Mach.map_addr m p_filename) m.mem in 
   let fname = Mach.string_of_sbytes bytes in
   let (fd, offset, eof, contents) = Fs.open_file fname in 
   m.info.fd_map <- m.info.fd_map @ [(fd, fname, offset)];
@@ -124,7 +124,7 @@ let rec __clib_printf (m: Mach.t) (fmt: char list) (args: int64 list) : unit =
     Printf.printf ("%c") (arg |> Int64.to_int |> Char.chr);
     __clib_printf m f rest_args
   | ('%'::'s'::f), (arg::rest_args) ->
-    let str = Memory.read_to_null_terminator arg m.mem |> Mach.string_of_sbytes in
+    let str = Memory.read_to_null_terminator (Mach.map_addr m arg) m.mem |> Mach.string_of_sbytes in
     Printf.printf "%s" str;
     __clib_printf m f rest_args
   | (c::f), _ -> 
@@ -146,7 +146,7 @@ let execute_extern_function (m: Mach.t) (lbl: string) : Mach.t =
   let arg7 = m.regs.(Mach.reg_index X7) in 
   match lbl with 
   | "printf" -> 
-    let str = Memory.read_to_null_terminator arg0 m.mem |> Mach.string_of_sbytes in 
+    let str = Memory.read_to_null_terminator (Mach.map_addr m arg0) m.mem |> Mach.string_of_sbytes in 
     clib_printf m str [arg1; arg2; arg3; arg4; arg5; arg6; arg7];
     m
   | "scanf" -> m 

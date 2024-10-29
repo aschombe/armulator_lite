@@ -31,30 +31,30 @@ let step (m': Mach.t) : Mach.t =
     let reg = Decoder.operand_as_register m o1 in 
     let label_name = Decoder.operand_as_label m o2 in 
     let label_val = Mach.lookup_label m.info.layout label_name in 
-    m.regs.(Mach.reg_index reg) <- Int64.sub (Int64.sub label_val m.info.mem_bot) 8L;
+    m.regs.(Mach.reg_index reg) <- Int64.sub label_val 8L;
     m
   | (Arm.Ldr, [o1; o2]) ->
     let reg = Decoder.operand_as_register m o1 in
     let load_addr = Decoder.operand_as_load_addr m o2 in
-    let data = Memory.read_bytes load_addr 8L m.mem |> Mach.int64_of_sbytes in 
+    let data = Memory.read_bytes (Mach.map_addr m load_addr) 8 m.mem |> Mach.int64_of_sbytes in 
     m.regs.(Mach.reg_index reg) <- data;
     m
   | (Arm.Ldrb, [o1; o2]) -> 
     let reg = Decoder.operand_as_register m o1 in
     let load_addr = Decoder.operand_as_load_addr m o2 in
-    let data = Memory.read_bytes load_addr 1L m.mem |> Mach.int64_of_sbytes in 
+    let data = Memory.read_bytes (Mach.map_addr m load_addr) 1 m.mem |> Mach.int64_of_sbytes in 
     m.regs.(Mach.reg_index reg) <- data;
     m
   | (Arm.Str, [o1; o2]) ->
     let reg = Decoder.operand_as_int64 m o1 in
     let load_addr = Decoder.operand_as_load_addr m o2 in
-    let data = Memory.write_bytes load_addr 8L (Mach.sbytes_of_int64 reg) m.mem in 
+    let data = Memory.write_bytes (Mach.map_addr m load_addr) 8 (Mach.sbytes_of_int64 reg) m.mem in 
     m.mem <- data;
     m
   | (Arm.Strb, [o1; o2]) ->
     let reg = Decoder.operand_as_int32 m o1 in
     let load_addr = Decoder.operand_as_load_addr m o2 in
-    let data = Memory.write_bytes load_addr 1L [(Mach.sbytes_of_int32 reg |> List.hd)] m.mem in 
+    let data = Memory.write_bytes (Mach.map_addr m load_addr) 1 [(Mach.sbytes_of_int32 reg |> List.hd)] m.mem in 
     m.mem <- data;
     m
   | (Arm.Add, [o1; o2; o3]) -> 
@@ -233,7 +233,7 @@ let step (m': Mach.t) : Mach.t =
   | (Arm.Bl, [o1]) -> 
     let label_name = Decoder.operand_as_label m o1 in 
     let label_val = Mach.lookup_label m.info.layout label_name in 
-    let m' = begin match (Memory.read_bytes (Int64.sub label_val m.info.mem_bot) 1L m.mem) with 
+    let m' = begin match (Memory.read_bytes (Mach.map_addr m label_val) 1 m.mem) with 
       | [ExternSym s] -> System.execute_extern_function m s
       | _ -> (
         m.regs.(Mach.reg_index Arm.LR) <- m.pc;
@@ -319,16 +319,16 @@ let debug (m: Mach.t) : unit =
         let address = m.regs.(Mach.reg_index reg) in 
         if List.length args > 2 then begin
           let mval = Arm_parser.token_to_int64 (0, String.concat " " broken) (List.nth args 2) in 
-          let count = Arm_parser.token_to_int64 (0, String.concat " " broken) (List.nth args 1) in 
-          let written = Memory.write_bytes address count (Mach.sbytes_of_int64 mval) m.mem in 
+          let count = Arm_parser.token_to_int64 (0, String.concat " " broken) (List.nth args 1) |> Int64.to_int in 
+          let written = Memory.write_bytes (Mach.map_addr m address) count (Mach.sbytes_of_int64 mval) m.mem in 
           m.mem <- written;
-          let sbytes = Memory.read_bytes address count m.mem in 
+          let sbytes = Memory.read_bytes (Mach.map_addr m address) count m.mem in 
           let bytearr = Mach.byte_array_of_sbytes sbytes |> List.map (fun c -> Char.code c |> Printf.sprintf "0x%08x") |> String.concat ", " in
           Printf.printf "[%s]\n" bytearr;
           loop m steps executed
         end else begin 
-          let count = Arm_parser.token_to_int64 (0, String.concat " " broken) (List.nth args 1) in 
-          let sbytes = Memory.read_bytes address count m.mem in 
+          let count = Arm_parser.token_to_int64 (0, String.concat " " broken) (List.nth args 1) |> Int64.to_int in 
+          let sbytes = Memory.read_bytes (Mach.map_addr m address) count m.mem in 
           let bytearr = Mach.byte_array_of_sbytes sbytes |> List.map (fun c -> Char.code c |> Printf.sprintf "0x%08x") |> String.concat ", " in
           Printf.printf "[%s]\n" bytearr;
           loop m steps executed

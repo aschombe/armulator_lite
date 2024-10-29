@@ -58,14 +58,8 @@ let operand_as_load_addr (m: Mach.t) (op: Arm.operand) : int64 =
     | Lit n -> n 
     | Lbl l -> Mach.lookup_label m.info.layout l
     end
-  | Arm.Offset(Arm.Ind2(r)) -> begin match r with 
-    | SP -> Int64.sub m.info.mem_top (m.regs.(Mach.reg_index r))
-    | _ -> m.regs.(Mach.reg_index r)
-  end
-  | Arm.Offset(Arm.Ind3(r, Lit offs)) -> begin match r with 
-    | SP -> Int64.add (Int64.sub m.info.mem_top (m.regs.(Mach.reg_index r))) (offs)
-    | _ -> Int64.add m.regs.(Mach.reg_index r) (offs)
-  end
+  | Arm.Offset(Arm.Ind2(r)) -> m.regs.(Mach.reg_index r)
+  | Arm.Offset(Arm.Ind3(r, Lit offs)) -> Int64.add m.regs.(Mach.reg_index r) (offs)
   | Arm.Offset(Arm.Ind4(r1, r2)) -> Int64.add m.regs.(Mach.reg_index r1) m.regs.(Mach.reg_index r2)
   | _ -> Mach.mach_error m (Arm_stringifier.string_of_operand op) "Unexpected offset"
 let operand_is_load_addr (op: Arm.operand) : bool = 

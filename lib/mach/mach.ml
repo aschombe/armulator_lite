@@ -98,14 +98,14 @@ let reg_index = function
   | Arm.XZR | Arm.W31 -> 31 | Arm.LR | Arm.W30 -> 30
 
 let map_addr (m: mach) (addr: int64) : int =
-  let addr = Int64.add addr m.info.mem_bot in
-  if addr < m.info.mem_bot || addr >= m.info.mem_top then
+  let addr = Int64.sub addr m.info.mem_bot in
+  if addr < 0L && addr >= m.info.mem_size then
     raise (Invalid_argument "map_addr")
   else
-    Int64.to_int (Int64.sub addr m.info.mem_bot)
+    Int64.to_int addr
 
 let get_insn (m: mach) (addr: int64) : Arm.insn =
-  let i = map_addr m addr in
+  let i = map_addr m (Int64.add addr m.info.mem_bot) in
   match m.mem.(i) with
   | Insn i -> i
   | _ -> raise (Invalid_argument "get_insn")
