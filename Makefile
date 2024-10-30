@@ -21,6 +21,12 @@ pl:
 	@chmod +w plugins/test_plugin.cmxs
 	@echo "done!"
 
+	@printf "\t"
+	dune build bin/cc_validator.cmxs
+	@cp _build/default/bin/cc_validator.cmxs plugins/cc_validator.cmxs
+	@chmod +w plugins/cc_validator.cmxs
+	@echo "done!"
+
 test:
 	./arml -f test.s
 
