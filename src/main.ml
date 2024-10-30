@@ -1,3 +1,6 @@
+open Arch_core
+open Parsing
+
 (* default program args
   debug = false
   validate = false

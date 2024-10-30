@@ -1,3 +1,7 @@
+open Asm
+open Arch_core
+open Parsing
+
 let compared = ref ""
 
 let base_ran : bool ref = ref false

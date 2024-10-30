@@ -1,3 +1,5 @@
+open Arch_core
+open Asm
 (*
 This is a calling convention validator.
 It checks that calling convention of the entire program is followed.

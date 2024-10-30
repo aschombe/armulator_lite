@@ -1,3 +1,7 @@
+open Asm
+open Arch_core
+open Parsing
+
 let test_arg = ref ""
 
 let post_exec (m: Mach.t) : Mach.t = 
