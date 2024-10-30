@@ -21,4 +21,4 @@
  (name cc_validator)
  (modules cc_validator)
  (modes plugin)
- (libraries arm mach emulator plugins))
+ (libraries arm mach plugins))
