@@ -1,4 +1,4 @@
 (test
  (name test_armulator_lite)
- (libraries arm arm_parser arm_stringifier)
+ (libraries asm parsing)
  (deps (glob_files_rec ../armprograms/*)))

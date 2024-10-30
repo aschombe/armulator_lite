@@ -1,0 +1,5 @@
+(library
+ (name arch_core)
+ (public_name armulator_lite.arch_core)
+ (modules decoder emulator fs int64_overflow mach memory system validator plugins)
+ (libraries num asm parsing))

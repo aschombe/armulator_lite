@@ -1,3 +1,6 @@
+open Asm 
+open Parsing
+
 let run1_ast : Arm.prog = [
     Arm.GloblDef("_start");
     Arm.TextDirect([

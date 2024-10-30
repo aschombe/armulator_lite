@@ -1,3 +1,5 @@
+open Asm
+
 exception Syntax_error
 exception Ok
 

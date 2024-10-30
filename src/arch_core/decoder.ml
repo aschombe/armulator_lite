@@ -1,3 +1,6 @@
+open Asm
+open Parsing
+
 let is_w_register (r: Arm.reg) : bool = 
   match r with 
   | Arm.W0 | Arm.W1 | Arm.W2 | Arm.W3 | Arm.W4 | Arm.W5 | Arm.W6 | Arm.W7

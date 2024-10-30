@@ -3,6 +3,10 @@ exception Segmentation_fault of string
 exception Invalid_layout of string
 exception No_entrypoint
 
+open Asm
+open Parsing
+
+(** Default width of an Arm instruction, in bytes. *)
 let insn_size = 8L
 let max_file_sz = 0x10000
 let library_functions : string list = [

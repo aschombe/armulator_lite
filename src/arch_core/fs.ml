@@ -1,3 +1,5 @@
+open Parsing
+
 let curr_fd = ref 3
 let max_file_sz = 0x10000
 

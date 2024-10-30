@@ -1,3 +1,5 @@
+open Parsing
+
 type plugin_event = 
 | OnLoadEvent
 | OnUnloadEvent

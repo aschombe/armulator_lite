@@ -1,3 +1,6 @@
+open Asm 
+open Parsing
+
 let data_into_reg (r: Arm.reg) (value: Arm.data) (rgs: int64 array) : unit = 
   match value with
   | Arm.Quad i -> rgs.(Mach.reg_index r) <- i 

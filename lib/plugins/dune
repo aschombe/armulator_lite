@@ -1,4 +1,0 @@
-(library
- (name plugins)
- (modules plugins)
- (libraries arm mach memory decoder arm_parser cmd_parser arm_stringifier))

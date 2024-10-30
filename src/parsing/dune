@@ -1,0 +1,4 @@
+(library
+ (name parsing)
+ (public_name armulator_lite.parsing)
+ (libraries str asm))

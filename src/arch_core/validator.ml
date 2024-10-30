@@ -1,6 +1,8 @@
 exception Invalid_instruction
 exception Unknown
 
+open Asm
+
 let arm_error (ln : int) (line : string) (highlight : string) (msg : string) : 'a =
   if String.equal highlight String.empty || ln == 0 then 
     raise Unknown

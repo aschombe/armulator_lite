@@ -1,3 +1,6 @@
+open Asm
+open Parsing
+
 exception Invalid_address of int
 
 let address_error (op_type: string) (addr: int) (highlight : string) (msg : string) : 'a =

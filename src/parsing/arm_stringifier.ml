@@ -1,3 +1,4 @@
+open Asm
 open Arm
 
 let string_of_top_level_directive = function
