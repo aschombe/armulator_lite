@@ -30,4 +30,4 @@ test:
 	./arml -f test.s
 
 clean:
-	rm arml plugins/plagiarism.cmxs plugins/test_plugin.cmxs
+	rm arml plugins/plagiarism.cmxs plugins/test_plugin.cmxs plugins/cc_validator.cmxs src/main.exe
