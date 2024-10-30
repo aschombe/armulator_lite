@@ -19,7 +19,6 @@ pl:
 	dune build bin/test_plugin.cmxs
 	@cp _build/default/bin/test_plugin.cmxs plugins/test_plugin.cmxs
 	@chmod +w plugins/test_plugin.cmxs
-	@echo "done!"
 
 	@printf "\t"
 	dune build bin/cc_validator.cmxs
